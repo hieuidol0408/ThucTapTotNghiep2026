@@ -43,6 +43,43 @@ const isAdmin = (req, res, next) => {
     });
 };
 
+// GET /stats - Summary statistics for dashboard (phải đặt TRƯỚC /:id)
+router.get('/stats', isAdmin, async (req, res) => {
+    let db;
+    try {
+        db = await getDb();
+        
+        const [userCount] = await db.execute('SELECT COUNT(*) as count FROM users');
+        
+        let taskCount = [{ count: 0 }];
+        let doneCount = [{ count: 0 }];
+        let lateCount = [{ count: 0 }];
+        
+        try {
+            [taskCount] = await db.execute('SELECT COUNT(*) as count FROM tasks');
+            [doneCount] = await db.execute('SELECT COUNT(*) as count FROM tasks WHERE status = "completed"');
+            [lateCount] = await db.execute('SELECT COUNT(*) as count FROM tasks WHERE status = "late"');
+        } catch (e) {
+            // Bảng tasks chưa tồn tại thì bỏ qua
+        }
+
+        res.json({
+            totalUsers: userCount[0].count,
+            totalTasks: taskCount[0].count,
+            completedTasks: doneCount[0].count,
+            lateTasks: lateCount[0].count,
+            percentComplete: taskCount[0].count > 0 
+                ? Math.round((doneCount[0].count / taskCount[0].count) * 100) 
+                : 0
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Lỗi server khi lấy thống kê.' });
+    } finally {
+        if (db) await db.end();
+    }
+});
+
 // GET / - List users (with optional search)
 router.get('/', isAdmin, async (req, res) => {
     let db;
@@ -153,5 +190,7 @@ router.delete('/:id', isAdmin, async (req, res) => {
         if (db) await db.end();
     }
 });
+
+// Route /stats đã được chuyển lên trước /:id ở phía trên
 
 module.exports = router;

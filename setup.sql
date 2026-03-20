@@ -17,3 +17,12 @@ CREATE TABLE IF NOT EXISTS users (
 DELETE FROM users WHERE username = 'admin';
 INSERT INTO users (username, password, full_name, role) 
 VALUES ('admin', '$2b$10$k3Q3XfHCUPkRxFZDwJGQsuMdadIOsHegltSnE/mDc.dKGsrCgkw62', 'Admin IT-STU', 'admin');
+
+-- Dữ liệu mẫu (Sample data) cho chức năng Quản lý danh sách nhân sự
+-- Mật khẩu mặc định là: admin123 (dùng chung mã băm bcrypt với admin)
+INSERT IGNORE INTO users (username, password, full_name, role) VALUES 
+('nguyenvana', '$2b$10$k3Q3XfHCUPkRxFZDwJGQsuMdadIOsHegltSnE/mDc.dKGsrCgkw62', 'Nguyễn Văn A', 'staff'),
+('tranthib', '$2b$10$k3Q3XfHCUPkRxFZDwJGQsuMdadIOsHegltSnE/mDc.dKGsrCgkw62', 'Trần Thị B', 'staff'),
+('levanc', '$2b$10$k3Q3XfHCUPkRxFZDwJGQsuMdadIOsHegltSnE/mDc.dKGsrCgkw62', 'Lê Văn C', 'staff'),
+('phamthid', '$2b$10$k3Q3XfHCUPkRxFZDwJGQsuMdadIOsHegltSnE/mDc.dKGsrCgkw62', 'Phạm Thị D', 'staff'),
+('hoange', '$2b$10$k3Q3XfHCUPkRxFZDwJGQsuMdadIOsHegltSnE/mDc.dKGsrCgkw62', 'Hoàng Văn E', 'staff');

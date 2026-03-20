@@ -63,7 +63,8 @@ const StatCard = ({ label, value, icon: Icon, colorClass }) => (
 );
 
 const ProtectedRoute = ({ children }) => {
-    const { user } = useContext(AuthContext);
+    const { user, loading } = useContext(AuthContext);
+    if (loading) return null; // Chờ load xong từ localStorage
     if (!user) return <Navigate to="/login" />;
     return children;
 };
