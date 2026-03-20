@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } f
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import Login from './components/Login';
 import StaffManagement from './components/StaffManagement';
+import DashboardHome from './components/DashboardHome';
 import './App.css';
 
 // ... (existing Icons)
@@ -67,28 +68,7 @@ const ProtectedRoute = ({ children }) => {
     return children;
 };
 
-const DashboardHome = ({ user }) => (
-    <div className="page-body">
-        <div className="stats-grid">
-            <StatCard label="Tổng công việc" value="12" icon={IconTasks} colorClass="c-blue" />
-            <StatCard label="Đang thực hiện" value="5" icon={IconDashboard} colorClass="c-orange" />
-            <StatCard label="Đã hoàn thành" value="7" icon={IconTasks} colorClass="c-green" />
-            <StatCard label="Trễ hạn" value="0" icon={IconReports} colorClass="c-red" />
-        </div>
-        
-        <div className="data-section">
-            <div className="section-header">
-                <h3>Lịch trình gần đây</h3>
-                <button className="btn-small">Xem tất cả</button>
-            </div>
-            <div className="empty-state">
-                <div className="empty-icon">📂</div>
-                <h4>Chưa có dữ liệu danh sách công việc</h4>
-                <p>Thông tin chi tiết về các công việc sẽ được hiển thị tại đây khi hệ thống có dữ liệu.</p>
-            </div>
-        </div>
-    </div>
-);
+// DashboardHome logic moved to separate file
 
 const DashboardLayout = () => {
     const { user, logoutUser } = useContext(AuthContext);
