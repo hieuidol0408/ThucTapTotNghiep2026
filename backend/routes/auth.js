@@ -25,6 +25,11 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ message: 'Mật khẩu không chính xác' });
         }
 
+        // Check if user is admin
+        if (user.role !== 'admin') {
+            return res.status(403).json({ message: 'Lỗi: Tài khoản không có quyền truy cập quản trị.' });
+        }
+
         // Create JWT
         const payload = {
             user: {
