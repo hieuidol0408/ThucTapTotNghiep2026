@@ -238,3 +238,61 @@ button[type="submit"]:hover {
     color: #64748b;
     border: 2px dashed #e2e8f0;
 }
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+
+    .sidebar {
+        height: auto;
+        padding: 1rem;
+    }
+
+    .sidebar-logo {
+        margin-bottom: 1.5rem;
+        justify-content: center;
+    }
+
+    .sidebar-nav {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+
+    .nav-item {
+        margin-bottom: 0;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8125rem;
+    }
+
+    .header {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+
+    .page-body {
+        padding: 1rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .login-form {
+        padding: 1.5rem;
+    }
+
+    .login-form h2 {
+        font-size: 1.5rem;
+    }
+}
