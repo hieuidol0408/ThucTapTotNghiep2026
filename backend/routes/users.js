@@ -23,9 +23,21 @@ const isAdmin = (req, res, next) => {
 
     if (!token) return res.status(401).json({ message: 'Không có token truy cập.' });
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) return res.status(403).json({ message: 'Token không hợp lệ.' });
-        if (user.role !== 'admin') return res.status(403).json({ message: 'Chỉ Admin mới có quyền truy cập.' });
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+            console.error('JWT Verify Error:', err.message);
+            return res.status(403).json({ message: 'Token không hợp lệ.' });
+        }
+        
+        // Support both {user: {...}} and {...} structures
+        const user = decoded.user || decoded;
+        console.log('DEBUG: Authorizing user:', user.username, 'Role:', user.role);
+
+        if (!user || !user.role || user.role.toLowerCase() !== 'admin') {
+            console.warn('DEBUG: Authorization failed for role:', user?.role);
+            return res.status(403).json({ message: 'Chỉ Admin mới có quyền truy cập.' });
+        }
+        
         req.user = user;
         next();
     });
