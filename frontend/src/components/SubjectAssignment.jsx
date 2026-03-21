@@ -1,18 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { fetchSubjects, fetchAssignments, createAssignment, deleteAssignment } from '../api/subjects';
 import { fetchUsers } from '../api/users';
+import '../SubjectAssignmentWow.css';
 
 const SubjectAssignment = () => {
-    const [activeTab, setActiveTab] = useState('assign');
-
     // Data
     const [users, setUsers] = useState([]);
     const [subjects, setSubjects] = useState([]);
     const [assignments, setAssignments] = useState([]);
+    const [search, setSearch] = useState('');
 
-    // State
+    // UI State
+    const [showForm, setShowForm] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [tableLoading, setTableLoading] = useState(true);
+    const [dataLoading, setDataLoading] = useState(true);
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
 
@@ -29,6 +30,7 @@ const SubjectAssignment = () => {
     }, []);
 
     const loadInitialData = async () => {
+        setDataLoading(true);
         try {
             const [usersData, subjectsData, assignmentsData] = await Promise.all([
                 fetchUsers(),
@@ -39,38 +41,35 @@ const SubjectAssignment = () => {
             setSubjects(subjectsData);
             setAssignments(assignmentsData);
         } catch (err) {
-            setError('Không thể tải dữ liệu. Vui lòng thử lại.');
+            setError('Không thể đồng bộ dữ liệu hệ thống.');
         } finally {
-            setTableLoading(false);
+            setDataLoading(false);
         }
     };
 
     const loadAssignments = async () => {
-        setTableLoading(true);
         try {
             const data = await fetchAssignments();
             setAssignments(data);
         } catch (err) {
-            setError('Không thể tải danh sách phân công.');
-        } finally {
-            setTableLoading(false);
+            console.error('Failed to reload assignments');
         }
     };
 
-    const showMessage = (msg, isError = false) => {
-        if (isError) {
-            setError(msg);
-            setMessage('');
-        } else {
-            setMessage(msg);
-            setError('');
-        }
-        setTimeout(() => { setMessage(''); setError(''); }, 4000);
-    };
+    // Calculate Dynamic Stats
+    const stats = useMemo(() => {
+        return {
+            total: assignments.length,
+            activeLecturers: new Set(assignments.map(a => a.user_id)).size,
+            uniqueSubjects: new Set(assignments.map(a => a.subject_id)).size,
+            totalCredits: assignments.reduce((sum, a) => sum + (a.credits || 0), 0)
+        };
+    }, [assignments]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+        setError('');
         try {
             await createAssignment({
                 user_id: parseInt(formData.user_id),
@@ -78,96 +77,131 @@ const SubjectAssignment = () => {
                 semester: formData.semester,
                 note: formData.note
             });
-            showMessage('✅ Phân công môn học thành công!');
+            setMessage('✨ Phân công chuyên môn thành công rực rỡ!');
             setFormData({ user_id: '', subject_id: '', semester: '', note: '' });
+            setShowForm(false);
             loadAssignments();
+            setTimeout(() => setMessage(''), 4000);
         } catch (err) {
-            showMessage(err.response?.data?.message || 'Có lỗi xảy ra khi phân công.', true);
+            setError(err.response?.data?.message || 'Có lỗi xảy ra khi thực hiện phân công.');
         } finally {
             setLoading(false);
         }
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Bạn có chắc chắn muốn xóa phân công này?')) return;
+        if (!window.confirm('Bạn có chắc chắn muốn gỡ bỏ phân công này?')) return;
         try {
             await deleteAssignment(id);
-            showMessage('Xóa phân công thành công!');
+            setMessage('🗑️ Đã xóa phân công khỏi cơ sở dữ liệu.');
             loadAssignments();
+            setTimeout(() => setMessage(''), 4000);
         } catch (err) {
-            showMessage(err.response?.data?.message || 'Lỗi khi xóa phân công.', true);
+            setError('Lỗi khi xóa phân công.');
         }
     };
+
+    const handleSearch = (e) => {
+        setSearch(e.target.value);
+    };
+
+    const filteredAssignments = assignments.filter(a => 
+        a.lecturer_name.toLowerCase().includes(search.toLowerCase()) || 
+        a.subject_name.toLowerCase().includes(search.toLowerCase()) ||
+        a.subject_code.toLowerCase().includes(search.toLowerCase())
+    );
 
     const selectedSubject = subjects.find(s => s.id === parseInt(formData.subject_id));
     const selectedUser = users.find(u => u.id === parseInt(formData.user_id));
 
     return (
-        <div className="staff-management animate-in">
-            {/* Header */}
-            <div className="section-header">
-                <div>
-                    <h3 className="text-2xl font-bold">Phân công môn học</h3>
-                    <p className="text-muted">Quản lý phân công giảng dạy cho giảng viên Khoa IT-STU</p>
+        <div className="subject-wow-container">
+            {/* Mesh Background */}
+            <div className="subject-wow-bg"></div>
+
+            {/* Premium Hero Banner */}
+            <div className="wow-header">
+                <div className="wow-header-left">
+                    <h1>Phân công môn học</h1>
+                    <p>Cổng quản lý và điều phối chuyên môn Khoa IT-STU</p>
+                </div>
+                <button 
+                    className={`btn-wow ${showForm ? 'btn-wow-cancel' : ''}`} 
+                    onClick={() => {
+                        setShowForm(!showForm);
+                        setError('');
+                        setFormData({ user_id: '', subject_id: '', semester: '', note: '' });
+                    }}
+                >
+                    {showForm ? 'Đóng lại' : (
+                        <>
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.7" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                            Giao môn học mới
+                        </>
+                    )}
+                </button>
+            </div>
+
+            {message && <div style={{background:'rgba(16,185,129,0.1)', color:'#059669', padding:'1.25rem 2rem', borderRadius:'20px', marginBottom:'2.5rem', border:'1px solid rgba(16,185,129,0.2)', fontWeight:'800', animation:'fadeSlideDown 0.4s ease-out'}}> {message} </div>}
+            {error && <div style={{background:'rgba(239,68,68,0.1)', color:'#dc2626', padding:'1.25rem 2rem', borderRadius:'20px', marginBottom:'2.5rem', border:'1px solid rgba(239,68,68,0.2)', fontWeight:'800', animation:'fadeSlideDown 0.4s ease-out'}}> {error} </div>}
+
+            {/* High-End Stats Cards */}
+            <div className="wow-stats-grid">
+                <div className="wow-stat-card">
+                    <div className="wow-stat-icon icon-cyan-wow">
+                        <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                    </div>
+                    <div className="wow-stat-label">Tổng phân công</div>
+                    <div className="wow-stat-value">{stats.total}</div>
+                </div>
+                <div className="wow-stat-card">
+                    <div className="wow-stat-icon icon-blue-wow">
+                        <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    </div>
+                    <div className="wow-stat-label">Giảng viên tham gia</div>
+                    <div className="wow-stat-value">{stats.activeLecturers}</div>
+                </div>
+                <div className="wow-stat-card">
+                    <div className="wow-stat-icon icon-indigo-wow">
+                        <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                    </div>
+                    <div className="wow-stat-label">Danh mục môn học</div>
+                    <div className="wow-stat-value">{stats.uniqueSubjects}</div>
+                </div>
+                <div className="wow-stat-card">
+                    <div className="wow-stat-icon icon-emerald-wow">
+                        <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    </div>
+                    <div className="wow-stat-label">Tổng số tín chỉ</div>
+                    <div className="wow-stat-value">{stats.totalCredits}</div>
                 </div>
             </div>
 
-            {/* Alerts */}
-            {message && <div className="alert-box success-alert mb-4">{message}</div>}
-            {error && <div className="alert-box error-alert mb-4">{error}</div>}
-
-            {/* Tab Navigation */}
-            <div className="tab-nav">
-                <button
-                    className={`tab-btn ${activeTab === 'assign' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('assign')}
-                >
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{display:'inline', marginRight:6, verticalAlign:'middle'}}>
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Giao môn học cho giảng viên
-                </button>
-                <button
-                    className={`tab-btn ${activeTab === 'list' ? 'active' : ''}`}
-                    onClick={() => { setActiveTab('list'); loadAssignments(); }}
-                >
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{display:'inline', marginRight:6, verticalAlign:'middle'}}>
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    Xem danh sách phân công
-                </button>
-            </div>
-
-            {/* ===== TAB 1: ASSIGN ===== */}
-            {activeTab === 'assign' && (
-                <div className="form-card animate-in">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
-                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                            </svg>
+            {/* Premium Glass Form Card */}
+            {showForm && (
+                <div className="wow-form-card">
+                    <div className="wow-form-section-header">
+                        <div className="wow-form-icon-container">
+                            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                         </div>
-                        <div>
-                            <h4 className="text-xl font-bold text-slate-800">Giao môn học cho giảng viên</h4>
-                            <p style={{fontSize:'0.875rem', color:'#64748b', marginTop:2}}>Chọn giảng viên và môn học để tạo phân công</p>
+                        <div className="wow-form-title">
+                            <h4>Thiết lập phân công mới</h4>
+                            <p>Phân bổ khối lượng giảng dạy chuyên môn cho học kỳ</p>
                         </div>
                     </div>
 
                     <form onSubmit={handleSubmit}>
-                        <div className="form-grid">
-                            {/* Giảng viên */}
-                            <div className="form-group-premium">
-                                <label>Giảng viên</label>
-                                <div className="input-with-icon">
-                                    <svg width="20" height="20" className="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
+                        <div className="wow-form-grid">
+                            <div className="wow-input-group">
+                                <label>Giảng viên phụ trách</label>
+                                <div className="wow-input-field-wrapper">
+                                    <svg className="wow-field-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                     <select
                                         value={formData.user_id}
                                         onChange={e => setFormData({ ...formData, user_id: e.target.value })}
                                         required
                                     >
-                                        <option value="">-- Chọn giảng viên --</option>
+                                        <option value="">Lựa chọn giảng viên...</option>
                                         {users.map(u => (
                                             <option key={u.id} value={u.id}>{u.full_name} (@{u.username})</option>
                                         ))}
@@ -175,19 +209,30 @@ const SubjectAssignment = () => {
                                 </div>
                             </div>
 
-                            {/* Môn học */}
-                            <div className="form-group-premium">
-                                <label>Môn học</label>
-                                <div className="input-with-icon">
-                                    <svg width="20" height="20" className="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                    </svg>
+                            <div className="wow-input-group">
+                                <label>Học kỳ triển khai</label>
+                                <div className="wow-input-field-wrapper">
+                                    <svg className="wow-field-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    <input
+                                        type="text"
+                                        value={formData.semester}
+                                        onChange={e => setFormData({ ...formData, semester: e.target.value })}
+                                        placeholder="Ví dụ: HK2 2024-2025"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="wow-input-group" style={{ gridColumn: '1 / -1' }}>
+                                <label>Môn học giảng dạy</label>
+                                <div className="wow-input-field-wrapper">
+                                    <svg className="wow-field-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                                     <select
                                         value={formData.subject_id}
                                         onChange={e => setFormData({ ...formData, subject_id: e.target.value })}
                                         required
                                     >
-                                        <option value="">-- Chọn môn học --</option>
+                                        <option value="">Lựa chọn môn học từ danh mục...</option>
                                         {subjects.map(s => (
                                             <option key={s.id} value={s.id}>{s.subject_code} – {s.subject_name} ({s.credits} TC)</option>
                                         ))}
@@ -195,170 +240,104 @@ const SubjectAssignment = () => {
                                 </div>
                             </div>
 
-                            {/* Học kỳ */}
-                            <div className="form-group-premium">
-                                <label>Học kỳ</label>
-                                <div className="input-with-icon">
-                                    <svg width="20" height="20" className="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                    <input
-                                        type="text"
-                                        value={formData.semester}
-                                        onChange={e => setFormData({ ...formData, semester: e.target.value })}
-                                        placeholder="Ví dụ: HK1 2024-2025"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Ghi chú */}
-                            <div className="form-group-premium">
-                                <label>Ghi chú <span style={{fontWeight:400, opacity:0.6, fontSize:'0.8rem'}}>(tùy chọn)</span></label>
-                                <div className="input-with-icon">
-                                    <svg width="20" height="20" className="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{top:'1rem', transform:'none'}}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                                    </svg>
-                                    <input
-                                        type="text"
+                            <div className="wow-input-group" style={{ gridColumn: '1 / -1' }}>
+                                <label>Ghi chú bổ sung</label>
+                                <div className="wow-input-field-wrapper">
+                                    <svg className="wow-field-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
+                                    <textarea
                                         value={formData.note}
                                         onChange={e => setFormData({ ...formData, note: e.target.value })}
-                                        placeholder="Ghi chú thêm (nếu có)..."
+                                        placeholder="Thông tin thêm về lịch học, phòng máy..."
+                                        rows="2"
                                     />
                                 </div>
                             </div>
                         </div>
 
-                        {/* Preview Card */}
+                        {/* Preview Panel */}
                         {(selectedUser || selectedSubject || formData.semester) && (
-                            <div className="assignment-preview">
-                                <p className="preview-title">📋 Xem trước phân công</p>
-                                <div className="preview-content">
-                                    {selectedUser && <span className="preview-chip chip-blue">👤 {selectedUser.full_name}</span>}
-                                    {selectedSubject && <span className="preview-chip chip-green">📚 {selectedSubject.subject_name}</span>}
-                                    {formData.semester && <span className="preview-chip chip-orange">📅 {formData.semester}</span>}
+                            <div className="wow-preview-panel mt-8">
+                                <div className="wow-preview-header">📋 Tóm tắt phân công</div>
+                                <div className="wow-preview-chips">
+                                    {selectedUser && <span className="wow-chip wow-chip-blue">👤 {selectedUser.full_name}</span>}
+                                    {selectedSubject && <span className="wow-chip wow-chip-green">📚 {selectedSubject.subject_name}</span>}
+                                    {formData.semester && <span className="wow-chip wow-chip-orange">📅 {formData.semester}</span>}
                                 </div>
                             </div>
                         )}
 
-                        <div className="form-actions-premium mt-8">
-                            <button type="submit" className="btn-main-premium" disabled={loading}>
-                                {loading ? (
-                                    <span className="flex items-center gap-2">
-                                        <span className="loader-inline" style={{borderTopColor:'#fff', width:18, height:18}}></span>
-                                        Đang xử lý...
-                                    </span>
-                                ) : (
-                                    <>
-                                        <span className="mr-2">🎓</span>
-                                        Xác nhận phân công
-                                    </>
-                                )}
+                        <div className="mt-12 text-center">
+                            <button type="submit" className="btn-wow" disabled={loading} style={{ width: '100%', maxWidth: '450px', justifyContent: 'center' }}>
+                                <span className="mr-2">🎓</span>
+                                {loading ? 'Đang xác lập...' : 'Phê Duyệt Phân Công Ngay'}
                             </button>
                         </div>
                     </form>
                 </div>
             )}
 
-            {/* ===== TAB 2: LIST ===== */}
-            {activeTab === 'list' && (
-                <div className="table-wrapper elevation-1 animate-in">
-                    <div className="table-header-ui" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                        <div>
-                            <span style={{fontWeight:700, fontSize:'1rem', color:'#1e293b'}}>Danh sách phân công</span>
-                            <span style={{marginLeft:12, background:'#e0e7ff', color:'#4338ca', padding:'2px 10px', borderRadius:20, fontSize:'0.8rem', fontWeight:700}}>
-                                {assignments.length} phân công
-                            </span>
-                        </div>
-                        <button className="btn-primary" style={{padding:'0.5rem 1.25rem', fontSize:'0.875rem'}} onClick={loadAssignments}>
-                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            Làm mới
-                        </button>
-                    </div>
-
-                    <div className="table-responsive">
-                        <table className="modern-table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Giảng viên</th>
-                                    <th>Môn học</th>
-                                    <th>Số TC</th>
-                                    <th>Học kỳ</th>
-                                    <th>Ghi chú</th>
-                                    <th>Ngày phân công</th>
-                                    <th className="text-right">Hành động</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {tableLoading ? (
-                                    <tr><td colSpan="8" className="text-center py-10">Đang tải dữ liệu...</td></tr>
-                                ) : assignments.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="8">
-                                            <div className="empty-assignment-state">
-                                                <div style={{fontSize:'3rem', marginBottom:'1rem'}}>📭</div>
-                                                <h4>Chưa có phân công nào</h4>
-                                                <p>Chuyển sang tab <strong>"Giao môn học"</strong> để tạo phân công đầu tiên.</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    assignments.map((a, idx) => (
-                                        <tr key={a.id}>
-                                            <td><span className="text-xs text-muted">{idx + 1}</span></td>
-                                            <td>
-                                                <div className="user-entity">
-                                                    <div className="entity-avatar" style={{background:'#dbeafe', color:'#1d4ed8'}}>
-                                                        {a.lecturer_name.charAt(0)}
-                                                    </div>
-                                                    <div className="entity-info">
-                                                        <span className="entity-name">{a.lecturer_name}</span>
-                                                        <span className="entity-username">@{a.lecturer_username}</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div>
-                                                    <div style={{fontWeight:600, color:'#1e293b', fontSize:'0.9rem'}}>{a.subject_name}</div>
-                                                    <div style={{fontSize:'0.75rem', color:'#64748b', marginTop:2}}>
-                                                        <span style={{background:'#f1f5f9', padding:'1px 6px', borderRadius:6, fontFamily:'monospace'}}>{a.subject_code}</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span className="badge-credits">{a.credits} TC</span>
-                                            </td>
-                                            <td>
-                                                <span className="badge-semester">{a.semester}</span>
-                                            </td>
-                                            <td>
-                                                <span style={{fontSize:'0.875rem', color:'#64748b'}}>
-                                                    {a.note || <em style={{opacity:0.4}}>—</em>}
-                                                </span>
-                                            </td>
-                                            <td style={{fontSize:'0.875rem', color:'#64748b'}}>
-                                                {new Date(a.assigned_at).toLocaleDateString('vi-VN')}
-                                            </td>
-                                            <td>
-                                                <div className="table-actions">
-                                                    <button className="icon-btn delete" onClick={() => handleDelete(a.id)} title="Xóa phân công">
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                        </svg>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+            {/* List Header */}
+            <div className="wow-list-header">
+                <h2>Cơ sở dữ liệu phân công</h2>
+                <div style={{position:'relative'}}>
+                    <input 
+                        type="text" 
+                        className="wow-search-input"
+                        placeholder="Tìm theo tên giảng viên, môn học..." 
+                        value={search}
+                        onChange={handleSearch}
+                    />
+                    <svg style={{position:'absolute', left:'20px', top:'50%', transform:'translateY(-50%)', color:'#94a3b8', width:'22px', height:'22px'}} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </div>
-            )}
+            </div>
+
+            {/* Floating Rows List */}
+            <div className="wow-list-section">
+                {dataLoading ? (
+                    <div className="wow-empty-state">
+                        <div className="wow-empty-icon">⏳</div>
+                        <h4>Đang truy xuất phân công</h4>
+                        <p>Dữ liệu đang được đồng bộ từ trung tâm...</p>
+                    </div>
+                ) : filteredAssignments.length === 0 ? (
+                    <div className="wow-empty-state">
+                        <div className="wow-empty-icon">📂</div>
+                        <h4>Trống lịch phân công</h4>
+                        <p>Hệ thống chưa ghi nhận phân công nào khớp với yêu cầu tìm kiếm</p>
+                    </div>
+                ) : (
+                    filteredAssignments.map(a => (
+                        <div className="wow-assignment-row" key={a.id}>
+                            <div className="wow-lecturer-cell">
+                                <div className="wow-lecturer-avatar">{a.lecturer_name.charAt(0)}</div>
+                                <div className="wow-lecturer-meta">
+                                    <span className="wow-lecturer-name">{a.lecturer_name}</span>
+                                    <span className="wow-lecturer-username">@{a.lecturer_username}</span>
+                                </div>
+                            </div>
+
+                            <div className="wow-subject-cell">
+                                <span className="wow-subject-name">{a.subject_name}</span>
+                                <span className="wow-subject-code">{a.subject_code}</span>
+                            </div>
+
+                            <div className="wow-credits-badge">{a.credits} Tín chỉ</div>
+                            
+                            <div className="wow-semester-badge">{a.semester}</div>
+
+                            <div className="wow-date-cell">
+                                📅 {new Date(a.assigned_at).toLocaleDateString('vi-VN')}
+                            </div>
+
+                            <div className="wow-list-actions">
+                                <button className="btn-icon-wow-rect" onClick={() => handleDelete(a.id)} title="Gỡ bỏ phân công">
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
         </div>
     );
 };

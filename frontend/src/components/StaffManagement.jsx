@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { fetchUsers, addUser, updateUser, deleteUser } from '../api/users';
+import '../StaffManagementWow.css';
 
 const StaffManagement = () => {
     const [users, setUsers] = useState([]);
@@ -35,6 +36,19 @@ const StaffManagement = () => {
         }
     };
 
+    // Calculate Stats
+    const stats = useMemo(() => {
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        
+        return {
+            total: users.length,
+            admins: users.filter(u => u.role === 'admin').length,
+            staff: users.filter(u => u.role === 'staff').length,
+            recent: users.filter(u => new Date(u.created_at) > sevenDaysAgo).length
+        };
+    }, [users]);
+
     const handleSearch = (e) => {
         setSearch(e.target.value);
         loadUsers(e.target.value);
@@ -45,18 +59,18 @@ const StaffManagement = () => {
         try {
             if (editId) {
                 await updateUser(editId, formData);
-                setMessage('Cập nhật thành công!');
+                setMessage('💾 Cập nhật thông tin nhân sự thành công!');
             } else {
                 await addUser(formData);
-                setMessage('Thêm nhân sự mới thành công!');
+                setMessage('✨ Đã thêm nhân sự mới vào hệ thống!');
             }
             setShowForm(false);
             setEditId(null);
             setFormData({ username: '', password: '', full_name: '', role: 'staff' });
             loadUsers(search);
-            setTimeout(() => setMessage(''), 3000);
+            setTimeout(() => setMessage(''), 4000);
         } catch (err) {
-            setError(err.response?.data?.message || 'Có lỗi xảy ra.');
+            setError(err.response?.data?.message || 'Có lỗi xảy ra trong quá trình xử lý.');
         }
     };
 
@@ -64,94 +78,135 @@ const StaffManagement = () => {
         setEditId(user.id);
         setFormData({
             username: user.username,
-            password: '', // Don't show old password
+            password: '', 
             full_name: user.full_name,
             role: user.role
         });
         setShowForm(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Bạn có chắc chắn muốn xóa nhân sự này?')) return;
+        if (!window.confirm('Hành động này không thể hoàn tác. Bạn có chắc chắn muốn xóa nhân sự này?')) return;
         try {
             await deleteUser(id);
-            setMessage('Xóa nhân sự thành công!');
+            setMessage('🗑️ Đã gỡ bỏ nhân sự khỏi hệ thống.');
             loadUsers(search);
-            setTimeout(() => setMessage(''), 3000);
+            setTimeout(() => setMessage(''), 4000);
         } catch (err) {
-            setError(err.response?.data?.message || 'Lỗi khi xóa.');
+            setError(err.response?.data?.message || 'Lỗi khi yêu cầu xóa.');
         }
     };
 
     return (
-        <div className="staff-management animate-in">
-            <div className="section-header">
-                <div>
-                    <h3 className="text-2xl font-bold">Quản lý nhân sự</h3>
-                    <p className="text-muted">Danh sách cán bộ quản lý và nhân viên Khoa IT-STU</p>
+        <div className="staff-wow-container">
+            {/* Immersive Background */}
+            <div className="staff-wow-bg"></div>
+
+            {/* Premium Hero Banner */}
+            <div className="wow-header">
+                <div className="wow-header-left">
+                    <h1>Hệ thống Nhân sự</h1>
+                    <p>Quản lý đội ngũ cán bộ và giảng viên Khoa IT-STU</p>
                 </div>
                 <button 
-                    className={`btn-primary ${showForm ? 'btn-cancel' : ''}`} 
+                    className={`btn-wow ${showForm ? 'btn-wow-cancel' : ''}`} 
                     onClick={() => {
                         setShowForm(!showForm);
                         setEditId(null);
                         setFormData({ username: '', password: '', full_name: '', role: 'staff' });
                     }}
                 >
-                    {showForm ? 'Hủy bỏ' : (
-                        <span className="flex items-center">
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                            Thêm nhân sự
-                        </span>
+                    {showForm ? 'Hủy bỏ thao tác' : (
+                        <>
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                            Khai báo nhân sự mới
+                        </>
                     )}
                 </button>
             </div>
 
-            {message && <div className="alert-box success-alert">{message}</div>}
-            {error && <div className="alert-box error-alert">{error}</div>}
+            {message && <div style={{background:'rgba(16,185,129,0.1)', color:'#059669', padding:'1.25rem 2rem', borderRadius:'20px', marginBottom:'2.5rem', border:'1px solid rgba(16,185,129,0.2)', fontWeight:'800', fontSize:'1.05rem', animation:'fadeSlideDown 0.4s ease-out'}}> {message} </div>}
+            {error && <div style={{background:'rgba(239,68,68,0.1)', color:'#dc2626', padding:'1.25rem 2rem', borderRadius:'20px', marginBottom:'2.5rem', border:'1px solid rgba(239,68,68,0.2)', fontWeight:'800', fontSize:'1.05rem', animation:'fadeSlideDown 0.4s ease-out'}}> {error} </div>}
 
+            {/* High-End Stats Visualization */}
+            <div className="wow-stats-grid">
+                <div className="wow-stat-card">
+                    <div className="wow-stat-icon icon-indigo">
+                        <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    </div>
+                    <div className="wow-stat-label">Tổng quy mô</div>
+                    <div className="wow-stat-value">{stats.total}</div>
+                </div>
+                <div className="wow-stat-card">
+                    <div className="wow-stat-icon icon-purple">
+                        <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    </div>
+                    <div className="wow-stat-label">Quản trị viên</div>
+                    <div className="wow-stat-value">{stats.admins}</div>
+                </div>
+                <div className="wow-stat-card">
+                    <div className="wow-stat-icon icon-cyan">
+                        <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    </div>
+                    <div className="wow-stat-label">Thành viên</div>
+                    <div className="wow-stat-value">{stats.staff}</div>
+                </div>
+                <div className="wow-stat-card">
+                    <div className="wow-stat-icon icon-rose">
+                        <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div className="wow-stat-label">Mới trong tuần</div>
+                    <div className="wow-stat-value">{stats.recent}</div>
+                </div>
+            </div>
+
+            {/* Immersive Glass Form */}
             {showForm && (
-                <div className="form-card animate-in mb-8">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
-                            <svg width="24" height="24" className="form-header-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                <div className="wow-form-card">
+                    <div className="wow-form-section-header">
+                        <div className="wow-form-icon-container">
+                            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
                         </div>
-                        <h4 className="text-xl font-bold text-slate-800">{editId ? 'Cập nhật thông tin nhân sự' : 'Thông tin nhân sự mới'}</h4>
+                        <div className="wow-form-title">
+                            <h4>{editId ? 'Hiệu chỉnh thông tin' : 'Thiết lập nhân sự mới'}</h4>
+                            <p>Cung cấp định danh và phân quyền truy cập hệ thống</p>
+                        </div>
                     </div>
                     
-                    <form onSubmit={handleSubmit} className="crud-form">
-                        <div className="form-grid">
-                            <div className="form-group-premium">
+                    <form onSubmit={handleSubmit}>
+                        <div className="wow-form-grid">
+                            <div className="wow-input-group">
                                 <label>Tên đăng nhập (Username)</label>
-                                <div className="input-with-icon">
-                                    <svg width="20" height="20" className="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                <div className="wow-input-field-wrapper">
+                                    <svg className="wow-field-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                     <input 
                                         type="text" 
                                         value={formData.username}
                                         onChange={(e) => setFormData({...formData, username: e.target.value})}
                                         disabled={!!editId}
-                                        placeholder="Ví dụ: nva_it"
+                                        placeholder="Tên định danh duy nhất..."
                                         required
                                     />
                                 </div>
                             </div>
-                            <div className="form-group-premium">
-                                <label>Họ và tên</label>
-                                <div className="input-with-icon">
-                                    <svg width="20" height="20" className="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a5 5 0 00-5 5h10a5 5 0 00-5-5zM2 17a2 2 0 100-4 2 2 0 000 4zM18 17a2 2 0 100-4 2 2 0 000 4z"></path></svg>
+                            <div className="wow-input-group">
+                                <label>Họ và tên đầy đủ</label>
+                                <div className="wow-input-field-wrapper">
+                                    <svg className="wow-field-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                     <input 
                                         type="text" 
                                         value={formData.full_name}
                                         onChange={(e) => setFormData({...formData, full_name: e.target.value})}
-                                        placeholder="Ví dụ: Nguyễn Văn A"
+                                        placeholder="Nhập tên hiển thị..."
                                         required
                                     />
                                 </div>
                             </div>
-                            <div className="form-group-premium">
-                                <label>Mật khẩu {editId && <span className="text-xs opacity-70">(Bỏ trống nếu không đổi)</span>}</label>
-                                <div className="input-with-icon">
-                                    <svg width="20" height="20" className="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                            <div className="wow-input-group">
+                                <label>Mật khẩu {editId && <span className="opacity-50 text-sm font-medium ml-1">(Để trống nếu giữ nguyên)</span>}</label>
+                                <div className="wow-input-field-wrapper">
+                                    <svg className="wow-field-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                                     <input 
                                         type="password" 
                                         value={formData.password}
@@ -161,93 +216,82 @@ const StaffManagement = () => {
                                     />
                                 </div>
                             </div>
-                            <div className="form-group-premium">
-                                <label>Quyền hạn</label>
-                                <div className="input-with-icon">
-                                    <svg width="20" height="20" className="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                            <div className="wow-input-group">
+                                <label>Vai trò hệ thống</label>
+                                <div className="wow-input-field-wrapper">
+                                    <svg className="wow-field-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                                     <select 
                                         value={formData.role}
                                         onChange={(e) => setFormData({...formData, role: e.target.value})}
                                     >
-                                        <option value="staff">Nhân viên (Staff)</option>
-                                        <option value="admin">Quản trị viên (Admin)</option>
+                                        <option value="staff">Cán bộ / Giảng viên</option>
+                                        <option value="admin">Quản trị viên (Full Access)</option>
                                     </select>
                                 </div>
                             </div>
                         </div>
-                        <div className="form-actions-premium mt-8">
-                            <button type="submit" className="btn-main-premium">
-                                <span className="mr-2">{editId ? '💾' : '✨'}</span>
-                                {editId ? 'Lưu cập nhật thay đổi' : 'Xác nhận khởi tạo tài khoản'}
+                        <div style={{marginTop:'3.5rem', textAlign:'center'}}>
+                            <button type="submit" className="btn-wow" style={{width:'100%', maxWidth:'450px', justifyContent:'center'}}>
+                                <span className="mr-2">{editId ? '💾' : '🚀'}</span>
+                                {editId ? 'Cập nhật thay đổi ngay' : 'Kích hoạt tài khoản nhân sự'}
                             </button>
                         </div>
                     </form>
                 </div>
             )}
 
-            <div className="table-wrapper elevation-1">
-                <div className="table-header-ui">
-                    <div className="search-container">
-                        <svg className="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            {/* Floating List UI */}
+            <div className="wow-list-section">
+                <div className="wow-list-header">
+                    <h2>Đội ngũ nhân sự</h2>
+                    <div style={{position:'relative'}}>
                         <input 
                             type="text" 
-                            placeholder="Tìm theo tên hoặc username..." 
+                            className="wow-search-input"
+                            placeholder="Tìm kiếm nhân sự thông minh..." 
                             value={search}
                             onChange={handleSearch}
                         />
+                        <svg style={{position:'absolute', left:'20px', top:'50%', transform:'translateY(-50%)', color:'#94a3b8', width:'22px', height:'22px'}} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     </div>
                 </div>
 
-                <div className="table-responsive">
-                    <table className="modern-table">
-                        <thead>
-                            <tr>
-                                <th>#ID</th>
-                                <th>Thông tin nhân sự</th>
-                                <th>Quyền hạn</th>
-                                <th>Ngày tham gia</th>
-                                <th className="text-right">Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {loading ? (
-                                <tr><td colSpan="5" className="text-center py-10">Đang tải dữ liệu...</td></tr>
-                            ) : users.length === 0 ? (
-                                <tr><td colSpan="5" className="text-center py-10">Không tìm thấy nhân sự phù hợp</td></tr>
-                            ) : (
-                                users.map(u => (
-                                    <tr key={u.id}>
-                                        <td><span className="text-xs text-muted">ID: {u.id}</span></td>
-                                        <td>
-                                            <div className="user-entity">
-                                                <div className="entity-avatar">{u.full_name.charAt(0)}</div>
-                                                <div className="entity-info">
-                                                    <span className="entity-name">{u.full_name}</span>
-                                                    <span className="entity-username">@{u.username}</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span className={`badge ${u.role === 'admin' ? 'badge-admin' : 'badge-staff'}`}>
-                                                {u.role === 'admin' ? 'Quản trị' : 'Nhân viên'}
-                                            </span>
-                                        </td>
-                                        <td>{new Date(u.created_at).toLocaleDateString('vi-VN')}</td>
-                                        <td>
-                                            <div className="table-actions">
-                                                <button className="icon-btn edit" onClick={() => handleEdit(u)} title="Sửa">
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                                </button>
-                                                <button className="icon-btn delete" onClick={() => handleDelete(u.id)} title="Xóa">
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                <div style={{display:'flex', flexDirection:'column', gap:'1.25rem'}}>
+                    {loading ? (
+                        <div style={{textAlign:'center', padding:'5rem', color:'#64748b', fontWeight:'700'}}>⏳ Đang tải dữ liệu đội ngũ...</div>
+                    ) : users.length === 0 ? (
+                        <div style={{textAlign:'center', padding:'5rem', color:'#64748b', fontWeight:'700'}}>📂 Chưa có nhân sự nào trong danh sách.</div>
+                    ) : (
+                        users.map(u => (
+                            <div className="wow-staff-row" key={u.id}>
+                                <div className="wow-staff-id">#ID-{u.id}</div>
+                                <div className="wow-staff-info">
+                                    <div className="wow-staff-avatar">{u.full_name.charAt(0)}</div>
+                                    <div className="wow-staff-meta">
+                                        <span className="wow-staff-name">{u.full_name}</span>
+                                        <span className="wow-staff-username">@{u.username}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className={`wow-role-badge ${u.role === 'admin' ? 'wow-role-admin' : 'wow-role-staff'}`}>
+                                        {u.role === 'admin' ? 'Quản trị viên' : 'Nhân sự'}
+                                    </div>
+                                </div>
+                                <div className="wow-date-cell">
+                                    <span style={{marginRight:'8px'}}>📅</span>
+                                    {new Date(u.created_at).toLocaleDateString('vi-VN')}
+                                </div>
+                                <div className="wow-list-actions">
+                                    <button className="btn-icon-wow edit" onClick={() => handleEdit(u)} title="Hiệu chỉnh">
+                                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                    </button>
+                                    <button className="btn-icon-wow delete" onClick={() => handleDelete(u.id)} title="Gỡ bỏ">
+                                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
         </div>

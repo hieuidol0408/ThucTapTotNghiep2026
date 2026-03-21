@@ -1,27 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import '../DashboardWow.css';
 
-const IconTrendUp = () => (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-);
-
-const StatCard = ({ label, value, trend, icon: Icon, gradient }) => (
-    <div className={`premium-card ${gradient}`}>
-        <div className="card-header">
-            <div className="card-icon-wrapper">
-                <Icon className="w-6 h-6 text-white" />
+const StatCardWow = ({ label, value, trend, isUp, icon: Icon, colorClass }) => (
+    <div className="wow-stat-card">
+        <div className="wow-stat-header">
+            <div className={`wow-stat-icon-circ ${colorClass}`}>
+                <Icon className="w-7 h-7" />
             </div>
             {trend && (
-                <div className="card-trend">
-                    <IconTrendUp />
+                <div className={`wow-stat-trend ${isUp ? 'trend-up-wow' : 'trend-down-wow'}`}>
+                    {isUp ? (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                    ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>
+                    )}
                     <span>{trend}</span>
                 </div>
             )}
         </div>
-        <div className="card-body">
-            <h4 className="card-label">{label}</h4>
-            <h2 className="card-value">{value}</h2>
+        <div className="wow-stat-body">
+            <span className="wow-stat-label">{label}</span>
+            <span className="wow-stat-value">{value}</span>
         </div>
     </div>
 );
@@ -38,18 +39,10 @@ const DashboardHome = ({ user }) => {
     const [loading, setLoading] = useState(true);
     const [now, setNow] = useState(new Date());
 
-    // Cập nhật đồng hồ mỗi giây
     useEffect(() => {
         const timer = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
-
-    const getGreeting = () => {
-        const hour = new Date().getHours();
-        if (hour < 12) return 'Chào buổi sáng';
-        if (hour < 18) return 'Chào buổi chiều';
-        return 'Chào buổi tối';
-    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -62,7 +55,7 @@ const DashboardHome = ({ user }) => {
                     axios.get('/api/users/stats', { headers })
                 ]);
                 
-                setRecentUsers(usersRes.data.slice(-5).reverse()); // Newest first
+                setRecentUsers(usersRes.data.slice(-5).reverse());
                 setStatsData(statsRes.data);
             } catch (err) {
                 console.error('Error fetching dashboard data:', err);
@@ -73,85 +66,108 @@ const DashboardHome = ({ user }) => {
         fetchData();
     }, []);
 
-    const stats = [
-        { label: 'Tổng nhân viên', value: statsData.totalUsers, trend: '+12%', icon: (props) => (
-            <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-        ), gradient: 'g-blue' },
-        { label: 'Công việc mới', value: statsData.totalTasks, trend: '+5%', icon: (props) => (
-            <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-        ), gradient: 'g-indigo' },
-        { label: 'Hoàn thành', value: statsData.percentComplete + '%', trend: '+8%', icon: (props) => (
-            <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-        ), gradient: 'g-green' },
-        { label: 'Báo cáo trễ', value: statsData.lateTasks.toString().padStart(2, '0'), trend: '-2%', icon: (props) => (
-            <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-        ), gradient: 'g-red' },
+    const statsConfig = [
+        { label: 'Tổng nhân viên', value: statsData.totalUsers, trend: '+12%', isUp: true, colorClass: 'icon-blue-dash', icon: (props) => (
+            <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+        )},
+        { label: 'Công việc mới', value: statsData.totalTasks, trend: '+5%', isUp: true, colorClass: 'icon-indigo-dash', icon: (props) => (
+            <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        )},
+        { label: 'Hoàn thành', value: statsData.percentComplete + '%', trend: '+8%', isUp: true, colorClass: 'icon-emerald-dash', icon: (props) => (
+            <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        )},
+        { label: 'Báo cáo trễ', value: statsData.lateTasks.toString().padStart(2, '0'), trend: '-2%', isUp: false, colorClass: 'icon-rose-dash', icon: (props) => (
+            <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+        )},
     ];
 
     return (
-        <div className="dashboard-home animate-in">
-            <header className="welcome-section">
-                <div className="welcome-text">
-                    <h1>Chào mừng, <span className="highlight-text">{user.full_name}</span> ✨</h1>
-                    <p>Hôm nay là {now.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} — {now.toLocaleTimeString('vi-VN')}</p>
+        <div className="dashboard-wow-container">
+            {/* Mesh Background */}
+            <div className="dashboard-wow-bg"></div>
+
+            {/* Premium Welcome Banner */}
+            <header className="wow-welcome-banner">
+                <div className="wow-welcome-left">
+                    <h1>Chào mừng, <span>{user.full_name}</span> ✨</h1>
+                    <p>
+                        Hôm nay là {now.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                        <span className="wow-live-clock">{now.toLocaleTimeString('vi-VN')}</span>
+                    </p>
                 </div>
-                <div className="quick-actions">
-                    <button className="btn-secondary">Tải báo cáo</button>
-                    <button className="btn-primary">Tạo công việc mới</button>
+                <div className="wow-welcome-actions">
+                    <button className="btn-wow-secondary">Tải báo cáo</button>
+                    <Link to="/dashboard/tasks" style={{textDecoration:'none'}}>
+                        <button className="btn-wow-primary">Giao việc mới</button>
+                    </Link>
                 </div>
             </header>
 
-            <div className="stats-grid-modern">
-                {stats.map((s, i) => <StatCard key={i} {...s} />)}
+            {/* Stats Grid */}
+            <div className="wow-stats-grid">
+                {statsConfig.map((s, i) => <StatCardWow key={i} {...s} />)}
             </div>
 
-            <div className="dashboard-content-grid">
-                <div className="content-card chart-widget">
-                    <div className="card-header-ui">
+            {/* Content Grid */}
+            <div className="wow-content-grid">
+                {/* Performance Chart Widget */}
+                <div className="wow-glass-panel">
+                    <div className="wow-panel-header">
                         <h3>Hiệu suất làm việc</h3>
-                        <select className="select-minimal">
+                        <select 
+                            style={{
+                                background: 'transparent',
+                                border: '1px solid #e2e8f0',
+                                padding: '0.4rem 1rem',
+                                borderRadius: '12px',
+                                fontWeight: 700,
+                                color: '#64748b',
+                                cursor: 'pointer'
+                            }}
+                        >
                             <option>7 ngày qua</option>
                             <option>30 ngày qua</option>
                         </select>
                     </div>
-                    <div className="mock-chart-container">
-                        <svg viewBox="0 0 400 150" className="sparkline-main">
-                            <path 
-                                d="M0,120 Q50,80 100,100 T200,40 T300,60 T400,20" 
-                                fill="none" 
-                                stroke="url(#gradient-line)" 
-                                strokeWidth="4" 
-                                strokeLinecap="round"
-                            />
+                    <div className="wow-chart-box">
+                        <svg viewBox="0 0 400 150" className="wow-sparkline">
                             <defs>
-                                <linearGradient id="gradient-line" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <linearGradient id="wow-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
                                     <stop offset="0%" stopColor="#4f46e5" />
-                                    <stop offset="100%" stopColor="#9333ea" />
+                                    <stop offset="100%" stopColor="#0ea5e9" />
                                 </linearGradient>
                             </defs>
+                            <path 
+                                d="M0,130 C40,110 80,140 120,90 C160,40 200,80 240,50 C280,20 320,60 360,30 L400,20" 
+                                fill="none" 
+                                stroke="url(#wow-gradient)" 
+                                strokeWidth="6" 
+                                strokeLinecap="round"
+                            />
                         </svg>
-                        <div className="chart-labels">
-                            <span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span>
+                        <div className="wow-chart-labels">
+                            <span>Thứ 2</span><span>Thứ 3</span><span>Thứ 4</span><span>Thứ 5</span><span>Thứ 6</span><span>Thứ 7</span><span>CN</span>
                         </div>
                     </div>
                 </div>
 
-                <div className="content-card recent-staff-widget">
-                    <div className="card-header-ui">
-                        <h3>Nhân sự mới cập nhật</h3>
-                        <Link to="/dashboard/staff" className="link-more">Xem tất cả</Link>
+                {/* Recent Staff Widget */}
+                <div className="wow-glass-panel">
+                    <div className="wow-panel-header">
+                        <h3>Nhân sự mới</h3>
+                        <Link to="/dashboard/staff" style={{color: '#4f46e5', fontWeight: 800, textDecoration: 'none', fontSize: '0.95rem'}}>Xem tất cả</Link>
                     </div>
-                    <div className="mini-staff-list">
+                    <div className="wow-mini-list">
                         {loading ? (
-                            <div className="loading-mini">Đang tải...</div>
+                            <div style={{textAlign: 'center', padding: '2rem', color: '#94a3b8', fontWeight: 700}}>Đang truy cập dữ liệu...</div>
                         ) : recentUsers.map(u => (
-                            <div key={u.id} className="mini-staff-item">
-                                <div className="mini-avatar">{u.full_name.charAt(0)}</div>
-                                <div className="mini-info">
-                                    <span className="name">{u.full_name}</span>
-                                    <span className="role">{u.role === 'admin' ? 'Quản trị' : 'Nhân viên'}</span>
+                            <div key={u.id} className="wow-mini-item">
+                                <div className="wow-mini-avatar">{u.full_name.charAt(0)}</div>
+                                <div className="wow-mini-info">
+                                    <span className="wow-mini-name">{u.full_name}</span>
+                                    <span className="wow-mini-role">{u.role === 'admin' ? 'Quản trị' : 'Nhân viên'}</span>
                                 </div>
-                                <span className="time">{new Date(u.created_at).toLocaleDateString('vi-VN')}</span>
+                                <span className="wow-mini-date">{new Date(u.created_at).toLocaleDateString('vi-VN')}</span>
                             </div>
                         ))}
                     </div>
