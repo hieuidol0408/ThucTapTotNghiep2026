@@ -62,3 +62,21 @@ CREATE TABLE IF NOT EXISTS assignments (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- ================================================
+-- Bảng Công việc (tasks)
+-- ================================================
+CREATE TABLE IF NOT EXISTS tasks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    status ENUM('todo', 'completed', 'late') DEFAULT 'todo',
+    assigned_to INT NOT NULL,
+    due_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE CASCADE
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Dữ liệu mẫu cho bảng công việc
+INSERT IGNORE INTO tasks (title, description, status, assigned_to, due_date) 
+VALUES ('Rà soát cơ sở dữ liệu học kỳ 1', 'Kiểm tra xem csdl có bị sự cố gì không?', 'todo', 1, '2026-10-31');
