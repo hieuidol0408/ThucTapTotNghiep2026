@@ -26,3 +26,39 @@ INSERT IGNORE INTO users (username, password, full_name, role) VALUES
 ('levanc', '$2b$10$k3Q3XfHCUPkRxFZDwJGQsuMdadIOsHegltSnE/mDc.dKGsrCgkw62', 'Lê Văn C', 'staff'),
 ('phamthid', '$2b$10$k3Q3XfHCUPkRxFZDwJGQsuMdadIOsHegltSnE/mDc.dKGsrCgkw62', 'Phạm Thị D', 'staff'),
 ('hoange', '$2b$10$k3Q3XfHCUPkRxFZDwJGQsuMdadIOsHegltSnE/mDc.dKGsrCgkw62', 'Hoàng Văn E', 'staff');
+
+-- ================================================
+-- Bảng Môn học (subjects)
+-- ================================================
+CREATE TABLE IF NOT EXISTS subjects (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    subject_code VARCHAR(20) NOT NULL UNIQUE,
+    subject_name VARCHAR(150) NOT NULL,
+    credits INT DEFAULT 3,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Dữ liệu mẫu môn học
+INSERT IGNORE INTO subjects (subject_code, subject_name, credits) VALUES
+('CNTT101', 'Lập trình căn bản', 3),
+('CNTT201', 'Cơ sở dữ liệu', 3),
+('CNTT301', 'Lập trình Web', 3),
+('CNTT401', 'Trí tuệ nhân tạo', 3),
+('CNTT501', 'An toàn thông tin', 3),
+('CNTT601', 'Phát triển ứng dụng di động', 3),
+('CNTT701', 'Mạng máy tính', 3),
+('CNTT801', 'Kiến trúc máy tính', 3);
+
+-- ================================================
+-- Bảng Phân công (assignments)
+-- ================================================
+CREATE TABLE IF NOT EXISTS assignments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    subject_id INT NOT NULL,
+    semester VARCHAR(50) NOT NULL,
+    note TEXT,
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

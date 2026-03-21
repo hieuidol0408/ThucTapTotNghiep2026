@@ -111,44 +111,60 @@ const StaffManagement = () => {
             {error && <div className="alert-box error-alert">{error}</div>}
 
             {showForm && (
-                <div className="form-card elevation-2 mb-8">
-                    <h4 className="text-lg font-semibold mb-6">{editId ? 'Cập nhật thông tin nhân sự' : 'Thông tin nhân sự mới'}</h4>
+                <div className="form-card animate-in mb-8">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                            <svg width="24" height="24" className="form-header-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                        </div>
+                        <h4 className="text-xl font-bold text-slate-800">{editId ? 'Cập nhật thông tin nhân sự' : 'Thông tin nhân sự mới'}</h4>
+                    </div>
+                    
                     <form onSubmit={handleSubmit} className="crud-form">
                         <div className="form-grid">
-                            <div className="form-group">
+                            <div className="form-group-premium">
                                 <label>Tên đăng nhập (Username)</label>
-                                <input 
-                                    type="text" 
-                                    value={formData.username}
-                                    onChange={(e) => setFormData({...formData, username: e.target.value})}
-                                    disabled={!!editId}
-                                    placeholder="Ví dụ: nva_it"
-                                    required
-                                />
+                                <div className="input-with-icon">
+                                    <svg width="20" height="20" className="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                    <input 
+                                        type="text" 
+                                        value={formData.username}
+                                        onChange={(e) => setFormData({...formData, username: e.target.value})}
+                                        disabled={!!editId}
+                                        placeholder="Ví dụ: nva_it"
+                                        required
+                                    />
+                                </div>
                             </div>
-                            <div className="form-group">
+                            <div className="form-group-premium">
                                 <label>Họ và tên</label>
-                                <input 
-                                    type="text" 
-                                    value={formData.full_name}
-                                    onChange={(e) => setFormData({...formData, full_name: e.target.value})}
-                                    placeholder="Ví dụ: Nguyễn Văn A"
-                                    required
-                                />
+                                <div className="input-with-icon">
+                                    <svg width="20" height="20" className="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a5 5 0 00-5 5h10a5 5 0 00-5-5zM2 17a2 2 0 100-4 2 2 0 000 4zM18 17a2 2 0 100-4 2 2 0 000 4z"></path></svg>
+                                    <input 
+                                        type="text" 
+                                        value={formData.full_name}
+                                        onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+                                        placeholder="Ví dụ: Nguyễn Văn A"
+                                        required
+                                    />
+                                </div>
                             </div>
-                            <div className="form-group">
+                            <div className="form-group-premium">
                                 <label>Mật khẩu {editId && <span className="text-xs opacity-70">(Bỏ trống nếu không đổi)</span>}</label>
-                                <input 
-                                    type="password" 
-                                    value={formData.password}
-                                    onChange={(e) => setFormData({...formData, password: e.target.value})}
-                                    placeholder="••••••••"
-                                    required={!editId}
-                                />
+                                <div className="input-with-icon">
+                                    <svg width="20" height="20" className="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                    <input 
+                                        type="password" 
+                                        value={formData.password}
+                                        onChange={(e) => setFormData({...formData, password: e.target.value})}
+                                        placeholder="••••••••"
+                                        required={!editId}
+                                    />
+                                </div>
                             </div>
-                            <div className="form-group">
+                            <div className="form-group-premium">
                                 <label>Quyền hạn</label>
-                                <div className="select-wrapper">
+                                <div className="input-with-icon">
+                                    <svg width="20" height="20" className="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                                     <select 
                                         value={formData.role}
                                         onChange={(e) => setFormData({...formData, role: e.target.value})}
@@ -159,9 +175,10 @@ const StaffManagement = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="form-actions mt-6">
-                            <button type="submit" className="btn-main">
-                                {editId ? 'Lưu cập nhật' : 'Xác nhận tạo tài khoản'}
+                        <div className="form-actions-premium mt-8">
+                            <button type="submit" className="btn-main-premium">
+                                <span className="mr-2">{editId ? '💾' : '✨'}</span>
+                                {editId ? 'Lưu cập nhật thay đổi' : 'Xác nhận khởi tạo tài khoản'}
                             </button>
                         </div>
                     </form>

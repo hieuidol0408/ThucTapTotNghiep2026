@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } f
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import Login from './components/Login';
 import StaffManagement from './components/StaffManagement';
+import SubjectAssignment from './components/SubjectAssignment';
 import DashboardHome from './components/DashboardHome';
 import './App.css';
 
@@ -35,6 +36,12 @@ const IconSettings = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065Z" />
         <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+    </svg>
+);
+
+const IconBook = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
     </svg>
 );
 
@@ -77,6 +84,7 @@ const DashboardLayout = () => {
 
     const getPageTitle = () => {
         if (location.pathname === '/dashboard/staff') return 'Quản lý nhân sự';
+        if (location.pathname === '/dashboard/subjects') return 'Phân công môn học';
         return 'Tổng quan hệ thống';
     };
 
@@ -90,6 +98,7 @@ const DashboardLayout = () => {
                 <nav className="sidebar-nav">
                     <NavItem icon={IconDashboard} label="Dashboard" path="/dashboard" />
                     <NavItem icon={IconUsers} label="Quản lý nhân sự" path="/dashboard/staff" />
+                    <NavItem icon={IconBook} label="Phân công môn học" path="/dashboard/subjects" />
                     <NavItem icon={IconTasks} label="Công việc của tôi" path="/dashboard/tasks" />
                     <NavItem icon={IconReports} label="Báo cáo" path="/dashboard/reports" />
                     <NavItem icon={IconSettings} label="Cài đặt" path="/dashboard/settings" />
@@ -124,6 +133,7 @@ const DashboardLayout = () => {
                 <Routes>
                     <Route index element={<DashboardHome user={user} />} />
                     <Route path="staff" element={<StaffManagement />} />
+                    <Route path="subjects" element={<SubjectAssignment />} />
                 </Routes>
             </main>
         </div>

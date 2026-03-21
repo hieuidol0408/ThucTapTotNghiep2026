@@ -6,6 +6,7 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
+const subjectRoutes = require('./routes/subjects');
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/subjects', subjectRoutes);
 
 // Serving Frontend Static Files
 const frontendPath = path.join(__dirname, '..', 'frontend', 'dist');
