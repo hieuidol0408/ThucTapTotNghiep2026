@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { fetchTasks, createTask, deleteTask } from '../api/tasks';
+import { fetchTasks, createTask, deleteTask, submitTaskReport } from '../api/tasks';
 import { fetchUsers } from '../api/users';
 import '../TaskAssignmentWow.css';
 
@@ -12,15 +12,24 @@ const TaskAssignment = () => {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
+    category: 'Giảng dạy',
     description: '',
-    assigned_to: '',
-    due_date: '',
+    assignee_id: '',
+    start_date: '',
+    end_date: '',
     status: 'todo'
   });
   
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  
+  // Reporting state
+  const [reportingTask, setReportingTask] = useState(null);
+  const [reportFormData, setReportFormData] = useState({
+    progress_percent: 0,
+    report_note: ''
+  });
 
   // Fetch initial data
   useEffect(() => {
@@ -63,7 +72,7 @@ const TaskAssignment = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.title || !formData.assigned_to || !formData.due_date) {
+    if (!formData.title || !formData.category || !formData.assignee_id || !formData.start_date || !formData.end_date) {
       setError('Vui lòng điền các trường bắt buộc');
       return;
     }
@@ -77,9 +86,11 @@ const TaskAssignment = () => {
       // Reset form & reload
       setFormData({
         title: '',
+        category: 'Giảng dạy',
         description: '',
-        assigned_to: '',
-        due_date: '',
+        assignee_id: '',
+        start_date: '',
+        end_date: '',
         status: 'todo'
       });
       setShowForm(false);
@@ -102,6 +113,25 @@ const TaskAssignment = () => {
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
       alert('Lỗi khi xóa công việc');
+    }
+  };
+
+  const handleReportSubmit = async (e) => {
+    e.preventDefault();
+    if (!reportingTask) return;
+    
+    try {
+      setLoading(true);
+      await submitTaskReport(reportingTask.id, reportFormData);
+      setMessage('Báo cáo tiến độ thành công!');
+      setReportingTask(null);
+      setReportFormData({ progress_percent: 0, report_note: '' });
+      loadTasks();
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      setError('Lỗi khi gửi báo cáo');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -179,7 +209,7 @@ const TaskAssignment = () => {
                     onClick={() => {
                         setShowForm(!showForm);
                         setError('');
-                        setFormData({ title: '', description: '', assigned_to: '', due_date: '', status: 'todo' });
+                        setFormData({ title: '', category: 'Giảng dạy', description: '', assignee_id: '', start_date: '', end_date: '', status: 'todo' });
                     }}
                 >
                     {showForm ? 'Đóng lại' : (
@@ -253,6 +283,24 @@ const TaskAssignment = () => {
                         </div>
 
                         <div className="wow-form-group" style={{ gridColumn: '1 / -1' }}>
+                            <label>Trọng tâm công việc (Danh mục) <span className="text-red-500 ml-1">*</span></label>
+                            <div className="wow-input-wrapper">
+                                <svg className="wow-input-icon" width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                                <select 
+                                    name="category"
+                                    value={formData.category}
+                                    onChange={handleInputChange}
+                                    required
+                                >
+                                    <option value="Giảng dạy">Chuyên môn giảng dạy</option>
+                                    <option value="Nghiên cứu">Nghiên cứu khoa học</option>
+                                    <option value="Hành chính">Công tác hành chính</option>
+                                    <option value="Đoàn thể">Hoạt động đoàn thể</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="wow-form-group" style={{ gridColumn: '1 / -1' }}>
                             <label>Mô tả và yêu cầu</label>
                             <div className="wow-input-wrapper textarea">
                                 <svg className="wow-input-icon" width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16M4 18h7"></path></svg>
@@ -266,32 +314,46 @@ const TaskAssignment = () => {
                             </div>
                         </div>
 
-                        <div className="wow-form-group">
+                        <div className="wow-form-group" style={{ gridColumn: '1 / -1' }}>
                             <label>Chỉ định nhân sự <span className="text-red-500 ml-1">*</span></label>
                             <div className="wow-input-wrapper">
                                 <svg className="wow-input-icon" width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                                 <select 
-                                    name="assigned_to"
-                                    value={formData.assigned_to}
+                                    name="assignee_id"
+                                    value={formData.assignee_id}
                                     onChange={handleInputChange}
                                     required
                                 >
                                     <option value="">Lựa chọn người phụ trách...</option>
                                     {users.map(u => (
-                                        <option key={u.id} value={u.id}>{u.full_name} (@{u.username})</option>
+                                        <option key={u.id} value={u.id}>{u.full_name} (@{u.employee_code || u.username})</option>
                                     ))}
                                 </select>
                             </div>
                         </div>
 
                         <div className="wow-form-group">
-                            <label>Kỳ hạn chót (Deadline) <span className="text-red-500 ml-1">*</span></label>
+                            <label>Ngày bắt đầu <span className="text-red-500 ml-1">*</span></label>
                             <div className="wow-input-wrapper">
                                 <svg className="wow-input-icon" width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                 <input 
                                     type="date"
-                                    name="due_date" 
-                                    value={formData.due_date}
+                                    name="start_date" 
+                                    value={formData.start_date}
+                                    onChange={handleInputChange}
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="wow-form-group">
+                            <label>Ngày kết thúc, Deadline <span className="text-red-500 ml-1">*</span></label>
+                            <div className="wow-input-wrapper">
+                                <svg className="wow-input-icon" width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <input 
+                                    type="date"
+                                    name="end_date" 
+                                    value={formData.end_date}
                                     onChange={handleInputChange}
                                     required
                                 />
@@ -369,8 +431,13 @@ const TaskAssignment = () => {
                     <div className="wow-task-row" key={task.id}>
                         <div className="task-title-cell">
                             <div className="task-wow-title">{task.title}</div>
+                            {task.category && (
+                                <div style={{ fontSize: '0.85rem', color: '#6366f1', fontWeight: '600', marginTop: '4px', display:'inline-block', padding:'2px 8px', background:'rgba(99, 102, 241, 0.1)', borderRadius:'6px' }}>
+                                    📌 {task.category}
+                                </div>
+                            )}
                             {task.description && (
-                                <div className="task-wow-desc">{task.description}</div>
+                                <div className="task-wow-desc mt-1">{task.description}</div>
                             )}
                         </div>
                         
@@ -382,11 +449,23 @@ const TaskAssignment = () => {
                             </div>
                         </div>
 
-                        <div className="date-cell">
-                            <span className="wow-date" title="Hạn chót hoàn thành">📅 {formatDateString(task.due_date)}</span>
+                        <div className="date-cell" style={{display:'flex', flexDirection:'column', gap:'4px', fontSize:'0.9rem', color:'#64748b'}}>
+                            <span title="Dự kiến bắt đầu">🟢 {formatDateString(task.start_date)}</span>
+                            <span title="Hạn chót hoàn thành" style={{color:'#ef4444'}}>🔴 {formatDateString(task.end_date)}</span>
                         </div>
 
-                        <div className="status-cell">
+                        <div className="status-cell" style={{gap: '8px', display: 'flex', flexDirection: 'column'}}>
+                             {task.current_progress !== null && (
+                                <div style={{width: '100%'}}>
+                                    <div style={{display:'flex', justifyContent:'space-between', fontSize:'0.75rem', fontWeight:'800', marginBottom:'4px', color:'#4f46e5'}}>
+                                        <span>Tiến độ</span>
+                                        <span>{task.current_progress}%</span>
+                                    </div>
+                                    <div style={{width:'100%', height:'6px', background:'rgba(0,0,0,0.05)', borderRadius:'10px', overflow:'hidden'}}>
+                                        <div style={{width: `${task.current_progress}%`, height:'100%', background: 'linear-gradient(90deg, #4f46e5, #0ea5e9)', transition:'width 0.5s ease'}}></div>
+                                    </div>
+                                </div>
+                            )}
                             <div className={`badge-wow-visual ${getStatusWowClass(task.status)}`} style={{ cursor: 'default' }}>
                                 <StatusIcon status={task.status} />
                                 <span>
@@ -403,13 +482,75 @@ const TaskAssignment = () => {
                                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 </button>
                             ) : (
-                                <span style={{width:'44px'}}></span>
+                                <button 
+                                    className="btn-wow-mini" 
+                                    onClick={() => {
+                                        setReportingTask(task);
+                                        setReportFormData({ progress_percent: 100, report_note: '' });
+                                    }}
+                                    style={{padding: '0.4rem 0.8rem', fontSize: '0.8rem', whiteSpace: 'nowrap'}}
+                                >
+                                    Báo cáo
+                                </button>
                             )}
                         </div>
                     </div>
                 ))
             )}
         </div>
+
+        {/* Reporting Modal */}
+        {reportingTask && (
+            <div className="wow-report-modal-overlay">
+                <div className="wow-report-modal">
+                    <div className="wow-modal-header">
+                        <h4>Báo cáo tiến độ</h4>
+                        <button onClick={() => setReportingTask(null)}>✕</button>
+                    </div>
+                    <div className="wow-modal-body">
+                        <p className="mb-4">Nhiệm vụ: <strong>{reportingTask.title}</strong></p>
+                        <form onSubmit={handleReportSubmit}>
+                            <div className="wow-form-group">
+                                <label>Tiến độ hiện tại (%)</label>
+                                <input 
+                                    type="number" 
+                                    min="0" 
+                                    max="100"
+                                    value={reportFormData.progress_percent}
+                                    onChange={e => setReportFormData({...reportFormData, progress_percent: e.target.value})}
+                                    style={{width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #e2e8f0'}}
+                                    required
+                                />
+                                <input 
+                                    type="range" 
+                                    min="0" 
+                                    max="100" 
+                                    value={reportFormData.progress_percent}
+                                    onChange={e => setReportFormData({...reportFormData, progress_percent: e.target.value})}
+                                    style={{width: '100%', marginTop: '0.5rem'}}
+                                />
+                            </div>
+                            <div className="wow-form-group mt-4">
+                                <label>Ghi chú báo cáo</label>
+                                <textarea 
+                                    rows="3"
+                                    value={reportFormData.report_note}
+                                    onChange={e => setReportFormData({...reportFormData, report_note: e.target.value})}
+                                    placeholder="Mô tả tóm tắt kết quả công việc hoặc khó khăn..."
+                                    style={{width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #e2e8f0', marginTop: '0.5rem'}}
+                                ></textarea>
+                            </div>
+                            <div className="mt-8 flex gap-4">
+                                <button type="button" className="btn-wow-secondary w-full" onClick={() => setReportingTask(null)}>Hủy</button>
+                                <button type="submit" className="btn-wow-primary w-full" disabled={loading}>
+                                    {loading ? 'Đang gửi...' : 'Gửi báo cáo'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        )}
     </div>
   );
 };

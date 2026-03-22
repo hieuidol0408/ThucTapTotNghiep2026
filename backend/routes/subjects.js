@@ -42,7 +42,7 @@ router.get('/', isAdmin, async (req, res) => {
     try {
         db = await getDb();
         const [subjects] = await db.execute(
-            'SELECT id, subject_code, subject_name, credits FROM subjects ORDER BY subject_code ASC'
+            'SELECT subject_id as id, subject_code, subject_name, credits FROM Subjects ORDER BY subject_code ASC'
         );
         res.json(subjects);
     } catch (error) {
@@ -58,22 +58,30 @@ router.get('/assignments', isAdmin, async (req, res) => {
     let db;
     try {
         db = await getDb();
-        const [rows] = await db.execute(`
+        let query = `
             SELECT 
-                a.id,
+                a.assignment_id as id,
                 u.full_name AS lecturer_name,
-                u.username AS lecturer_username,
+                u.employee_code AS lecturer_username,
                 s.subject_code,
                 s.subject_name,
                 s.credits,
                 a.semester,
-                a.note,
-                a.assigned_at
-            FROM assignments a
-            JOIN users u ON a.user_id = u.id
-            JOIN subjects s ON a.subject_id = s.id
-            ORDER BY a.assigned_at DESC
-        `);
+                a.teaching_role
+            FROM Subject_Assignments a
+            JOIN Users u ON a.user_id = u.user_id
+            JOIN Subjects s ON a.subject_id = s.subject_id
+        `;
+        let params = [];
+        
+        if (req.user.role === 'staff') {
+            query += ` WHERE a.user_id = ?`;
+            params.push(req.user.id);
+        }
+
+        query += ` ORDER BY a.assignment_id DESC`;
+        
+        const [rows] = await db.execute(query, params);
         res.json(rows);
     } catch (error) {
         console.error(error);
@@ -87,17 +95,17 @@ router.get('/assignments', isAdmin, async (req, res) => {
 router.post('/assignments', isAdmin, async (req, res) => {
     let db;
     try {
-        const { user_id, subject_id, semester, note } = req.body;
+        const { user_id, subject_id, teaching_role, semester, note } = req.body;
 
-        if (!user_id || !subject_id || !semester) {
-            return res.status(400).json({ message: 'Vui lòng điền đầy đủ thông tin phân công.' });
+        if (!user_id || !subject_id || !teaching_role || !semester) {
+            return res.status(400).json({ message: 'Vui lòng điền đầy đủ thông tin phân công (Giảng viên, Môn học, Vai trò, Học kỳ).' });
         }
 
         db = await getDb();
 
         // Kiểm tra trùng phân công trong cùng học kỳ
         const [existing] = await db.execute(
-            'SELECT id FROM assignments WHERE user_id = ? AND subject_id = ? AND semester = ?',
+            'SELECT assignment_id FROM Subject_Assignments WHERE user_id = ? AND subject_id = ? AND semester = ?',
             [user_id, subject_id, semester]
         );
         if (existing.length > 0) {
@@ -105,8 +113,8 @@ router.post('/assignments', isAdmin, async (req, res) => {
         }
 
         await db.execute(
-            'INSERT INTO assignments (user_id, subject_id, semester, note) VALUES (?, ?, ?, ?)',
-            [user_id, subject_id, semester, note || null]
+            'INSERT INTO Subject_Assignments (user_id, subject_id, teaching_role, semester) VALUES (?, ?, ?, ?)',
+            [user_id, subject_id, teaching_role, semester]
         );
 
         res.status(201).json({ message: 'Phân công môn học thành công!' });
@@ -124,7 +132,7 @@ router.delete('/assignments/:id', isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         db = await getDb();
-        await db.execute('DELETE FROM assignments WHERE id = ?', [id]);
+        await db.execute('DELETE FROM Subject_Assignments WHERE assignment_id = ?', [id]);
         res.json({ message: 'Xóa phân công thành công.' });
     } catch (error) {
         console.error(error);

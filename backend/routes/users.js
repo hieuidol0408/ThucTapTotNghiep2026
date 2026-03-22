@@ -50,16 +50,16 @@ router.get('/stats', isAdmin, async (req, res) => {
     try {
         db = await getDb();
         
-        const [userCount] = await db.execute('SELECT COUNT(*) as count FROM users');
+        const [userCount] = await db.execute('SELECT COUNT(*) as count FROM Users');
         
         let taskCount = [{ count: 0 }];
         let doneCount = [{ count: 0 }];
         let lateCount = [{ count: 0 }];
         
         try {
-            [taskCount] = await db.execute('SELECT COUNT(*) as count FROM tasks');
-            [doneCount] = await db.execute('SELECT COUNT(*) as count FROM tasks WHERE status = "completed"');
-            [lateCount] = await db.execute('SELECT COUNT(*) as count FROM tasks WHERE status = "late"');
+            [taskCount] = await db.execute('SELECT COUNT(*) as count FROM Tasks');
+            [doneCount] = await db.execute('SELECT COUNT(*) as count FROM Tasks WHERE status = "completed"');
+            [lateCount] = await db.execute('SELECT COUNT(*) as count FROM Tasks WHERE status = "late"');
         } catch (e) {
             // Bảng tasks chưa tồn tại thì bỏ qua
         }
@@ -88,12 +88,12 @@ router.get('/', isAdmin, async (req, res) => {
         const { search } = req.query;
         db = await getDb();
         
-        let query = 'SELECT id, username, full_name, role, created_at FROM users';
+        let query = 'SELECT user_id, employee_code, email, full_name, role, status FROM Users';
         let params = [];
 
         if (search) {
-            query += ' WHERE username LIKE ? OR full_name LIKE ?';
-            params = [`%${search}%`, `%${search}%`];
+            query += ' WHERE employee_code LIKE ? OR full_name LIKE ? OR email LIKE ?';
+            params = [`%${search}%`, `%${search}%`, `%${search}%`];
         }
 
         const [users] = await db.execute(query, params);
@@ -110,24 +110,24 @@ router.get('/', isAdmin, async (req, res) => {
 router.post('/', isAdmin, async (req, res) => {
     let db;
     try {
-        const { username, password, full_name, role } = req.body;
+        const { employee_code, email, password, full_name, role, status } = req.body;
         
-        if (!username || !password || !full_name) {
+        if (!employee_code || !email || !password || !full_name) {
             return res.status(400).json({ message: 'Vui lòng điền đầy đủ thông tin.' });
         }
 
         db = await getDb();
 
-        // Check if username exists
-        const [existing] = await db.execute('SELECT id FROM users WHERE username = ?', [username]);
+        // Check if employee_code or email exists
+        const [existing] = await db.execute('SELECT user_id FROM Users WHERE employee_code = ? OR email = ?', [employee_code, email]);
         if (existing.length > 0) {
-            return res.status(400).json({ message: 'Tên đăng nhập đã tồn tại.' });
+            return res.status(400).json({ message: 'Mã nhân viên hoặc Email đã tồn tại.' });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
         await db.execute(
-            'INSERT INTO users (username, password, full_name, role) VALUES (?, ?, ?, ?)',
-            [username, hashedPassword, full_name, role || 'staff']
+            'INSERT INTO Users (employee_code, email, password_hash, full_name, role, status) VALUES (?, ?, ?, ?, ?, ?)',
+            [employee_code, email, hashedPassword, full_name, role || 'staff', status || 'active']
         );
 
         res.status(201).json({ message: 'Thêm nhân sự thành công.' });
@@ -144,20 +144,21 @@ router.put('/:id', isAdmin, async (req, res) => {
     let db;
     try {
         const { id } = req.params;
-        const { full_name, role, password } = req.body;
+        const { full_name, role, email, status, password } = req.body;
         
         db = await getDb();
 
-        let query = 'UPDATE users SET full_name = ?, role = ?';
-        let params = [full_name, role];
+        // Lấy thông tin user hiện tại nếu cần, hoặc cứ update thẳng
+        let query = 'UPDATE Users SET full_name = ?, role = ?, email = ?, status = ?';
+        let params = [full_name, role, email, status];
 
         if (password && password.length > 0) {
             const hashedPassword = await bcrypt.hash(password, 10);
-            query += ', password = ?';
+            query += ', password_hash = ?';
             params.push(hashedPassword);
         }
 
-        query += ' WHERE id = ?';
+        query += ' WHERE user_id = ?';
         params.push(id);
 
         await db.execute(query, params);
@@ -182,7 +183,7 @@ router.delete('/:id', isAdmin, async (req, res) => {
             return res.status(400).json({ message: 'Bạn không thể tự xóa tài khoản của mình.' });
         }
 
-        await db.execute('DELETE FROM users WHERE id = ?', [id]);
+        await db.execute('DELETE FROM Users WHERE user_id = ?', [id]);
         res.json({ message: 'Xóa nhân sự thành công.' });
     } catch (error) {
         console.error(error);

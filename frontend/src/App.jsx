@@ -106,9 +106,19 @@ const DashboardLayout = () => {
                 </div>
                 <nav className="sidebar-nav">
                     <NavItem icon={IconDashboard} label="Trang Chủ" path="/dashboard" />
-                    <NavItem icon={IconUsers} label="Quản lý nhân sự" path="/dashboard/staff" />
-                    <NavItem icon={IconBook} label="Phân công môn học" path="/dashboard/subjects" />
-                    <NavItem icon={IconClipboardList} label="Phân công công việc" path="/dashboard/tasks" />
+                    {user.role === 'admin' && (
+                        <NavItem icon={IconUsers} label="Quản lý nhân sự" path="/dashboard/staff" />
+                    )}
+                    <NavItem 
+                        icon={IconBook} 
+                        label={user.role === 'admin' ? "Phân công môn học" : "Môn học của tôi"} 
+                        path="/dashboard/subjects" 
+                    />
+                    <NavItem 
+                        icon={IconClipboardList} 
+                        label={user.role === 'admin' ? "Phân công công việc" : "Công việc của tôi"} 
+                        path="/dashboard/tasks" 
+                    />
                 </nav>
                 <div className="sidebar-footer">
                     <button className="logout-btn" onClick={logoutUser}>
@@ -129,7 +139,7 @@ const DashboardLayout = () => {
                     <div className="user-profile">
                         <div className="user-info">
                             <span className="user-name">{user.full_name}</span>
-                            <span className="user-role badge">{user.role === 'admin' ? 'Quản trị viên' : 'Nhân viên'}</span>
+                            <span className="user-role badge">{user.role === 'admin' ? 'Ban chủ nhiệm Khoa' : 'Giảng viên - Nhân viên'}</span>
                         </div>
                         <div className="avatar">
                             {user.full_name.charAt(0)}

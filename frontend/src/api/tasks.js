@@ -28,3 +28,13 @@ export const deleteTask = async (id) => {
   const response = await axios.delete(`${API_URL}/tasks/${id}`, getAuthHeaders());
   return response.data;
 };
+
+export const submitTaskReport = async (id, reportData) => {
+  const response = await axios.post(`${API_URL}/tasks/${id}/reports`, reportData, getAuthHeaders());
+  return response.data;
+};
+
+export const fetchTaskReports = async (id) => {
+  const response = await axios.get(`${API_URL}/tasks/${id}/reports`, getAuthHeaders());
+  return response.data;
+};

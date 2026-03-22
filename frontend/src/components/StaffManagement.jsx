@@ -13,10 +13,12 @@ const StaffManagement = () => {
     const [showForm, setShowForm] = useState(false);
     const [editId, setEditId] = useState(null);
     const [formData, setFormData] = useState({
-        username: '',
+        employee_code: '',
+        email: '',
         password: '',
         full_name: '',
-        role: 'staff'
+        role: 'staff',
+        status: 'active'
     });
 
     useEffect(() => {
@@ -66,7 +68,7 @@ const StaffManagement = () => {
             }
             setShowForm(false);
             setEditId(null);
-            setFormData({ username: '', password: '', full_name: '', role: 'staff' });
+            setFormData({ employee_code: '', email: '', password: '', full_name: '', role: 'staff', status: 'active' });
             loadUsers(search);
             setTimeout(() => setMessage(''), 4000);
         } catch (err) {
@@ -77,10 +79,12 @@ const StaffManagement = () => {
     const handleEdit = (user) => {
         setEditId(user.id);
         setFormData({
-            username: user.username,
+            employee_code: user.employee_code,
+            email: user.email,
             password: '', 
             full_name: user.full_name,
-            role: user.role
+            role: user.role,
+            status: user.status
         });
         setShowForm(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -114,7 +118,7 @@ const StaffManagement = () => {
                     onClick={() => {
                         setShowForm(!showForm);
                         setEditId(null);
-                        setFormData({ username: '', password: '', full_name: '', role: 'staff' });
+                        setFormData({ employee_code: '', email: '', password: '', full_name: '', role: 'staff', status: 'active' });
                     }}
                 >
                     {showForm ? 'Hủy bỏ thao tác' : (
@@ -177,15 +181,28 @@ const StaffManagement = () => {
                     <form onSubmit={handleSubmit}>
                         <div className="wow-form-grid">
                             <div className="wow-input-group">
-                                <label>Tên đăng nhập (Username)</label>
+                                <label>Mã nhân viên (Employee Code)</label>
                                 <div className="wow-input-field-wrapper">
                                     <svg className="wow-field-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                     <input 
                                         type="text" 
-                                        value={formData.username}
-                                        onChange={(e) => setFormData({...formData, username: e.target.value})}
+                                        value={formData.employee_code}
+                                        onChange={(e) => setFormData({...formData, employee_code: e.target.value})}
                                         disabled={!!editId}
-                                        placeholder="Tên định danh duy nhất..."
+                                        placeholder="Mã NV định danh duy nhất..."
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            <div className="wow-input-group">
+                                <label>Email liên hệ</label>
+                                <div className="wow-input-field-wrapper">
+                                    <svg className="wow-field-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                    <input 
+                                        type="email" 
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                        placeholder="Địa chỉ email công việc..."
                                         required
                                     />
                                 </div>
@@ -229,6 +246,19 @@ const StaffManagement = () => {
                                     </select>
                                 </div>
                             </div>
+                            <div className="wow-input-group">
+                                <label>Trạng thái</label>
+                                <div className="wow-input-field-wrapper">
+                                    <svg className="wow-field-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <select 
+                                        value={formData.status}
+                                        onChange={(e) => setFormData({...formData, status: e.target.value})}
+                                    >
+                                        <option value="active">Đang hoạt động</option>
+                                        <option value="inactive">Khóa tài khoản</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                         <div style={{marginTop:'3.5rem', textAlign:'center'}}>
                             <button type="submit" className="btn-wow" style={{width:'100%', maxWidth:'450px', justifyContent:'center'}}>
@@ -269,7 +299,7 @@ const StaffManagement = () => {
                                     <div className="wow-staff-avatar">{u.full_name.charAt(0)}</div>
                                     <div className="wow-staff-meta">
                                         <span className="wow-staff-name">{u.full_name}</span>
-                                        <span className="wow-staff-username">@{u.username}</span>
+                                        <span className="wow-staff-username">{u.employee_code} - {u.email}</span>
                                     </div>
                                 </div>
                                 <div>

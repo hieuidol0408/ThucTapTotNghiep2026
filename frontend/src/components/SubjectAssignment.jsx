@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { fetchSubjects, fetchAssignments, createAssignment, deleteAssignment } from '../api/subjects';
 import { fetchUsers } from '../api/users';
+import { AuthContext } from '../context/AuthContext';
 import '../SubjectAssignmentWow.css';
 
 const SubjectAssignment = () => {
+    const { user } = React.useContext(AuthContext);
     // Data
     const [users, setUsers] = useState([]);
     const [subjects, setSubjects] = useState([]);
@@ -21,6 +23,7 @@ const SubjectAssignment = () => {
     const [formData, setFormData] = useState({
         user_id: '',
         subject_id: '',
+        teaching_role: 'head',
         semester: '',
         note: ''
     });
@@ -74,11 +77,12 @@ const SubjectAssignment = () => {
             await createAssignment({
                 user_id: parseInt(formData.user_id),
                 subject_id: parseInt(formData.subject_id),
+                teaching_role: formData.teaching_role,
                 semester: formData.semester,
                 note: formData.note
             });
             setMessage('✨ Phân công chuyên môn thành công rực rỡ!');
-            setFormData({ user_id: '', subject_id: '', semester: '', note: '' });
+            setFormData({ user_id: '', subject_id: '', teaching_role: 'head', semester: '', note: '' });
             setShowForm(false);
             loadAssignments();
             setTimeout(() => setMessage(''), 4000);
@@ -125,21 +129,23 @@ const SubjectAssignment = () => {
                     <h1>Phân công môn học</h1>
                     <p>Cổng quản lý và điều phối chuyên môn Khoa IT-STU</p>
                 </div>
-                <button 
-                    className={`btn-wow ${showForm ? 'btn-wow-cancel' : ''}`} 
-                    onClick={() => {
-                        setShowForm(!showForm);
-                        setError('');
-                        setFormData({ user_id: '', subject_id: '', semester: '', note: '' });
-                    }}
-                >
-                    {showForm ? 'Đóng lại' : (
-                        <>
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.7" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                            Giao môn học mới
-                        </>
-                    )}
-                </button>
+                {user.role === 'admin' && (
+                    <button 
+                        className={`btn-wow ${showForm ? 'btn-wow-cancel' : ''}`} 
+                        onClick={() => {
+                            setShowForm(!showForm);
+                            setError('');
+                            setFormData({ user_id: '', subject_id: '', teaching_role: 'head', semester: '', note: '' });
+                        }}
+                    >
+                        {showForm ? 'Đóng lại' : (
+                            <>
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.7" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                Giao môn học mới
+                            </>
+                        )}
+                    </button>
+                )}
             </div>
 
             {message && <div style={{background:'rgba(16,185,129,0.1)', color:'#059669', padding:'1.25rem 2rem', borderRadius:'20px', marginBottom:'2.5rem', border:'1px solid rgba(16,185,129,0.2)', fontWeight:'800', animation:'fadeSlideDown 0.4s ease-out'}}> {message} </div>}
@@ -203,8 +209,23 @@ const SubjectAssignment = () => {
                                     >
                                         <option value="">Lựa chọn giảng viên...</option>
                                         {users.map(u => (
-                                            <option key={u.id} value={u.id}>{u.full_name} (@{u.username})</option>
+                                            <option key={u.id} value={u.id}>{u.full_name} (@{u.employee_code || u.username})</option>
                                         ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="wow-input-group">
+                                <label>Hình thức giảng dạy</label>
+                                <div className="wow-input-field-wrapper">
+                                    <svg className="wow-field-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                    <select
+                                        value={formData.teaching_role}
+                                        onChange={e => setFormData({ ...formData, teaching_role: e.target.value })}
+                                        required
+                                    >
+                                        <option value="head">Trưởng môn học</option>
+                                        <option value="lecturer">Giảng dạy</option>
                                     </select>
                                 </div>
                             </div>
@@ -323,17 +344,19 @@ const SubjectAssignment = () => {
 
                             <div className="wow-credits-badge">{a.credits} Tín chỉ</div>
                             
-                            <div className="wow-semester-badge">{a.semester}</div>
+                            <div className="wow-semester-badge">{a.teaching_role === 'head' ? 'Trưởng môn' : 'Giảng dạy'} - {a.semester}</div>
 
                             <div className="wow-date-cell">
                                 📅 {new Date(a.assigned_at).toLocaleDateString('vi-VN')}
                             </div>
 
-                            <div className="wow-list-actions">
-                                <button className="btn-icon-wow-rect" onClick={() => handleDelete(a.id)} title="Gỡ bỏ phân công">
-                                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                </button>
-                            </div>
+                            {user.role === 'admin' && (
+                                <div className="wow-list-actions">
+                                    <button className="btn-icon-wow-rect" onClick={() => handleDelete(a.id)} title="Gỡ bỏ phân công">
+                                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     ))
                 )}
