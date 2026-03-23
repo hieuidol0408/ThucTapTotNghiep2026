@@ -21,6 +21,9 @@ const StaffManagement = () => {
         status: 'active'
     });
 
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [showDetail, setShowDetail] = useState(false);
+
     useEffect(() => {
         loadUsers();
     }, []);
@@ -88,6 +91,23 @@ const StaffManagement = () => {
         });
         setShowForm(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const toggleStatus = async (user) => {
+        const newStatus = user.status === 'active' ? 'inactive' : 'active';
+        try {
+            await updateUser(user.id, { ...user, status: newStatus });
+            setMessage(`✨ Đã ${newStatus === 'active' ? 'mở khóa' : 'khóa'} tài khoản ${user.full_name}.`);
+            loadUsers(search);
+            setTimeout(() => setMessage(''), 3000);
+        } catch (err) {
+            setError('Không thể thay đổi trạng thái tài khoản.');
+        }
+    };
+
+    const handleViewDetail = (user) => {
+        setSelectedUser(user);
+        setShowDetail(true);
     };
 
     const handleDelete = async (id) => {
@@ -181,7 +201,7 @@ const StaffManagement = () => {
                     <form onSubmit={handleSubmit}>
                         <div className="wow-form-grid">
                             <div className="wow-input-group">
-                                <label>Mã nhân viên (Employee Code)</label>
+                                <label>Mã nhân viên (Định danh)</label>
                                 <div className="wow-input-field-wrapper">
                                     <svg className="wow-field-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                     <input 
@@ -189,60 +209,60 @@ const StaffManagement = () => {
                                         value={formData.employee_code}
                                         onChange={(e) => setFormData({...formData, employee_code: e.target.value})}
                                         disabled={!!editId}
-                                        placeholder="Mã NV định danh duy nhất..."
+                                        placeholder="Mã NV..."
                                         required
                                     />
                                 </div>
                             </div>
                             <div className="wow-input-group">
-                                <label>Email liên hệ</label>
+                                <label>Email thư điện tử</label>
                                 <div className="wow-input-field-wrapper">
                                     <svg className="wow-field-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                                     <input 
                                         type="email" 
                                         value={formData.email}
                                         onChange={(e) => setFormData({...formData, email: e.target.value})}
-                                        placeholder="Địa chỉ email công việc..."
+                                        placeholder="Email..."
                                         required
                                     />
                                 </div>
                             </div>
                             <div className="wow-input-group">
-                                <label>Họ và tên đầy đủ</label>
+                                <label>Họ và tên</label>
                                 <div className="wow-input-field-wrapper">
                                     <svg className="wow-field-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                     <input 
                                         type="text" 
                                         value={formData.full_name}
                                         onChange={(e) => setFormData({...formData, full_name: e.target.value})}
-                                        placeholder="Nhập tên hiển thị..."
+                                        placeholder="Tên nhân sự..."
                                         required
                                     />
                                 </div>
                             </div>
                             <div className="wow-input-group">
-                                <label>Mật khẩu {editId && <span className="opacity-50 text-sm font-medium ml-1">(Để trống nếu giữ nguyên)</span>}</label>
+                                <label>Mật khẩu {editId && <span className="opacity-50 text-sm font-medium ml-1">(Bỏ trống nếu không đổi)</span>}</label>
                                 <div className="wow-input-field-wrapper">
                                     <svg className="wow-field-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                                     <input 
                                         type="password" 
                                         value={formData.password}
                                         onChange={(e) => setFormData({...formData, password: e.target.value})}
-                                        placeholder="••••••••"
+                                        placeholder="Mật khẩu bảo mật..."
                                         required={!editId}
                                     />
                                 </div>
                             </div>
                             <div className="wow-input-group">
-                                <label>Vai trò hệ thống</label>
+                                <label>Vai trò truy cập</label>
                                 <div className="wow-input-field-wrapper">
                                     <svg className="wow-field-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                                     <select 
                                         value={formData.role}
                                         onChange={(e) => setFormData({...formData, role: e.target.value})}
                                     >
-                                        <option value="staff">Cán bộ / Giảng viên</option>
-                                        <option value="admin">Quản trị viên (Full Access)</option>
+                                        <option value="staff">Giảng viên / Nhân sự</option>
+                                        <option value="admin">Ban chủ nhiệm (Admin)</option>
                                     </select>
                                 </div>
                             </div>
@@ -273,12 +293,12 @@ const StaffManagement = () => {
             {/* Floating List UI */}
             <div className="wow-list-section">
                 <div className="wow-list-header">
-                    <h2>Đội ngũ nhân sự</h2>
+                    <h2>Tra cứu nhân sự</h2>
                     <div style={{position:'relative'}}>
                         <input 
                             type="text" 
                             className="wow-search-input"
-                            placeholder="Tìm kiếm nhân sự thông minh..." 
+                            placeholder="Nhập tên, mã NV hoặc email..." 
                             value={search}
                             onChange={handleSearch}
                         />
@@ -290,28 +310,47 @@ const StaffManagement = () => {
                     {loading ? (
                         <div style={{textAlign:'center', padding:'5rem', color:'#64748b', fontWeight:'700'}}>⏳ Đang tải dữ liệu đội ngũ...</div>
                     ) : users.length === 0 ? (
-                        <div style={{textAlign:'center', padding:'5rem', color:'#64748b', fontWeight:'700'}}>📂 Chưa có nhân sự nào trong danh sách.</div>
+                        <div style={{textAlign:'center', padding:'6rem 3rem', background:'rgba(255,255,255,0.4)', borderRadius:'24px', border:'1px dashed #cbd5e1', animation:'fadeSlideUp 0.5s ease-out'}}>
+                            <div style={{fontSize:'3.5rem', marginBottom:'1.5rem', filter:'drop-shadow(0 10px 15px rgba(0,0,0,0.1))'}}>🔍</div>
+                            <h3 style={{fontSize:'1.5rem', fontWeight:'800', color:'#1e293b', marginBottom:'0.5rem'}}>Không tìm thấy kết quả</h3>
+                            <p style={{fontSize:'1.05rem', color:'#64748b', fontWeight:'500'}}>Rất tiếc, chúng tôi không tìm thấy nhân sự nào khớp với từ khóa "<strong>{search}</strong>".</p>
+                            <button 
+                                onClick={() => { setSearch(''); loadUsers(''); }}
+                                style={{marginTop:'2rem', background:'#f1f5f9', border:'none', padding:'0.75rem 1.5rem', borderRadius:'12px', fontWeight:'700', color:'#475569', cursor:'pointer'}}
+                            >
+                                Hiển thị tất cả nhân sự
+                            </button>
+                        </div>
                     ) : (
                         users.map(u => (
                             <div className="wow-staff-row" key={u.id}>
-                                <div className="wow-staff-id">#ID-{u.id}</div>
-                                <div className="wow-staff-info">
+                                <div className="wow-staff-id" onClick={() => handleViewDetail(u)} style={{cursor:'pointer'}}>#ID-{u.id}</div>
+                                <div className="wow-staff-info" onClick={() => handleViewDetail(u)} style={{cursor:'pointer'}}>
                                     <div className="wow-staff-avatar">{u.full_name.charAt(0)}</div>
                                     <div className="wow-staff-meta">
                                         <span className="wow-staff-name">{u.full_name}</span>
                                         <span className="wow-staff-username">{u.employee_code} - {u.email}</span>
                                     </div>
                                 </div>
-                                <div>
+                                <div onClick={() => handleViewDetail(u)} style={{cursor:'pointer'}}>
                                     <div className={`wow-role-badge ${u.role === 'admin' ? 'wow-role-admin' : 'wow-role-staff'}`}>
                                         {u.role === 'admin' ? 'Quản trị viên' : 'Nhân sự'}
                                     </div>
                                 </div>
-                                <div className="wow-date-cell">
-                                    <span style={{marginRight:'8px'}}>📅</span>
-                                    {new Date(u.created_at).toLocaleDateString('vi-VN')}
+                                <div className="wow-status-cell">
+                                    <button 
+                                        className={`status-indicator ${u.status === 'active' ? 'active' : 'inactive'}`}
+                                        onClick={() => toggleStatus(u)}
+                                        title={u.status === 'active' ? 'Nhấn để khóa' : 'Nhấn để mở khóa'}
+                                    >
+                                        <div className="indicator-dot"></div>
+                                        {u.status === 'active' ? 'Đang hoạt động' : 'Đã khóa'}
+                                    </button>
                                 </div>
                                 <div className="wow-list-actions">
+                                    <button className="btn-icon-wow detail" onClick={() => handleViewDetail(u)} title="Xem chi tiết">
+                                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                    </button>
                                     <button className="btn-icon-wow edit" onClick={() => handleEdit(u)} title="Hiệu chỉnh">
                                         <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                     </button>
@@ -323,6 +362,52 @@ const StaffManagement = () => {
                         ))
                     )}
                 </div>
+
+            {/* View Detail Modal */}
+            {showDetail && selectedUser && (
+                <div className="wow-modal-overlay" onClick={() => setShowDetail(false)}>
+                    <div className="wow-modal-content" onClick={e => e.stopPropagation()}>
+                        <div className="wow-modal-header">
+                            <h3>Hồ sơ nhân sự</h3>
+                            <button className="btn-close-wow" onClick={() => setShowDetail(false)}>×</button>
+                        </div>
+                        <div className="wow-detail-body">
+                            <div className="detail-avatar-section">
+                                <div className="large-avatar">{selectedUser.full_name.charAt(0)}</div>
+                                <h2>{selectedUser.full_name}</h2>
+                                <span className={`badge ${selectedUser.role}`}>{selectedUser.role === 'admin' ? 'Quản trị viên' : 'Cán bộ'}</span>
+                            </div>
+                            <div className="detail-info-grid">
+                                <div className="info-item">
+                                    <label>Mã định danh</label>
+                                    <span>#{selectedUser.employee_code}</span>
+                                </div>
+                                <div className="info-item">
+                                    <label>Thư điện tử</label>
+                                    <span>{selectedUser.email}</span>
+                                </div>
+                                <div className="info-item">
+                                    <label>Tình trạng hồ sơ</label>
+                                    <span className={`status-text ${selectedUser.status}`}>{selectedUser.status === 'active' ? 'Đang hoạt động' : 'Tạm khóa'}</span>
+                                </div>
+                                <div className="info-item">
+                                    <label>ID Hệ thống</label>
+                                    <span>{selectedUser.id}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="wow-modal-footer">
+                            <button className="btn-wow btn-mini" onClick={() => { setShowDetail(false); handleEdit(selectedUser); }}>
+                                Chỉnh sửa thông tin
+                            </button>
+                            <button className="btn-wow btn-wow-secondary btn-mini" onClick={() => setShowDetail(false)}>
+                                Đóng lại
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             </div>
         </div>
     );
