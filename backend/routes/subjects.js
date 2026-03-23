@@ -16,8 +16,8 @@ const getDb = async () => {
     });
 };
 
-// Middleware to verify Admin Role
-const isAdmin = (req, res, next) => {
+// Middleware to verify Token
+const verifyToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
@@ -25,39 +25,28 @@ const isAdmin = (req, res, next) => {
 
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
         if (err) return res.status(403).json({ message: 'Token không hợp lệ.' });
-
-        const user = decoded.user || decoded;
-        if (!user || !user.role || user.role.toLowerCase() !== 'admin') {
-            return res.status(403).json({ message: 'Chỉ Admin mới có quyền truy cập.' });
-        }
-
-        req.user = user;
+        req.user = decoded.user || decoded;
         next();
     });
 };
 
-// GET /api/subjects - Lấy danh sách môn học
-router.get('/', isAdmin, async (req, res) => {
-    let db;
-    try {
-        db = await getDb();
-        const [subjects] = await db.execute(
-            'SELECT subject_id as id, subject_code, subject_name, credits FROM Subjects ORDER BY subject_code ASC'
-        );
-        res.json(subjects);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Lỗi server khi lấy danh sách môn học.' });
-    } finally {
-        if (db) await db.end();
+// Middleware to verify Admin Role (Requires verifyToken first)
+const isAdmin = (req, res, next) => {
+    if (!req.user || !req.user.role || req.user.role.toLowerCase() !== 'admin') {
+        return res.status(403).json({ message: 'Chỉ Admin mới có quyền thực hiện hành động này.' });
     }
-});
+    next();
+};
 
-// GET /api/subjects/assignments - Lấy danh sách phân công (PHẢI ĐẶT TRƯỚC /:id)
-router.get('/assignments', isAdmin, async (req, res) => {
+// --- SUBJECT ASSIGNMENT ROUTES (Place specific /assignments BEFORE generic /:id) ---
+
+// GET /api/subjects/assignments - Lấy danh sách phân công
+router.get('/assignments', verifyToken, async (req, res) => {
     let db;
+    console.log('DEBUG: Received GET /assignments request');
     try {
         db = await getDb();
+        console.log('DEBUG: DB connected for assignments');
         let query = `
             SELECT 
                 a.assignment_id as id,
@@ -74,49 +63,54 @@ router.get('/assignments', isAdmin, async (req, res) => {
         `;
         let params = [];
         
-        if (req.user.role === 'staff') {
+        // Staff only see their own assignments
+        if (req.user.role && req.user.role.toLowerCase() === 'staff') {
             query += ` WHERE a.user_id = ?`;
-            params.push(req.user.id);
+            params.push(req.user.user_id || req.user.id);
         }
 
         query += ` ORDER BY a.assignment_id DESC`;
+        console.log('DEBUG: Executing query for assignments:', query, params);
         
         const [rows] = await db.execute(query, params);
+        console.log('DEBUG: Query successful, units found:', rows.length);
         res.json(rows);
     } catch (error) {
-        console.error(error);
+        console.error('DEBUG ERROR:', error);
         res.status(500).json({ message: 'Lỗi server khi lấy danh sách phân công.' });
     } finally {
-        if (db) await db.end();
+        if (db) {
+            await db.end();
+            console.log('DEBUG: DB connection closed');
+        }
     }
 });
 
 // POST /api/subjects/assignments - Tạo phân công mới
-router.post('/assignments', isAdmin, async (req, res) => {
+router.post('/assignments', verifyToken, isAdmin, async (req, res) => {
     let db;
     try {
-        const { user_id, subject_id, teaching_role, semester, note } = req.body;
+        const { user_id, subject_id, teaching_role, semester } = req.body;
 
         if (!user_id || !subject_id || !teaching_role || !semester) {
-            return res.status(400).json({ message: 'Vui lòng điền đầy đủ thông tin phân công (Giảng viên, Môn học, Vai trò, Học kỳ).' });
+            return res.status(400).json({ message: 'Vui lòng điền đầy đủ thông tin phân công.' });
         }
 
         db = await getDb();
-
-        // Kiểm tra trùng phân công trong cùng học kỳ
+        
+        // Check for existing assignment
         const [existing] = await db.execute(
             'SELECT assignment_id FROM Subject_Assignments WHERE user_id = ? AND subject_id = ? AND semester = ?',
             [user_id, subject_id, semester]
         );
         if (existing.length > 0) {
-            return res.status(400).json({ message: 'Giảng viên này đã được phân công môn học này trong học kỳ đã chọn.' });
+            return res.status(400).json({ message: 'Môn học này đã được phân công cho giảng viên này trong học kỳ đã chọn.' });
         }
 
         await db.execute(
             'INSERT INTO Subject_Assignments (user_id, subject_id, teaching_role, semester) VALUES (?, ?, ?, ?)',
             [user_id, subject_id, teaching_role, semester]
         );
-
         res.status(201).json({ message: 'Phân công môn học thành công!' });
     } catch (error) {
         console.error(error);
@@ -127,7 +121,7 @@ router.post('/assignments', isAdmin, async (req, res) => {
 });
 
 // DELETE /api/subjects/assignments/:id - Xóa phân công
-router.delete('/assignments/:id', isAdmin, async (req, res) => {
+router.delete('/assignments/:id', verifyToken, isAdmin, async (req, res) => {
     let db;
     try {
         const { id } = req.params;
@@ -137,6 +131,92 @@ router.delete('/assignments/:id', isAdmin, async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Lỗi server khi xóa phân công.' });
+    } finally {
+        if (db) await db.end();
+    }
+});
+
+// --- MASTER SUBJECT ROUTES ---
+
+// GET /api/subjects - Lấy danh sách môn học
+router.get('/', verifyToken, async (req, res) => {
+    let db;
+    try {
+        db = await getDb();
+        const [subjects] = await db.execute(
+            'SELECT subject_id as id, subject_code, subject_name, credits FROM Subjects ORDER BY subject_code ASC'
+        );
+        res.json(subjects);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Lỗi server khi lấy danh sách môn học.' });
+    } finally {
+        if (db) await db.end();
+    }
+});
+
+// POST /api/subjects - Thêm môn học mới
+router.post('/', verifyToken, isAdmin, async (req, res) => {
+    let db;
+    try {
+        const { subject_code, subject_name, credits } = req.body;
+        if (!subject_code || !subject_name || !credits) {
+            return res.status(400).json({ message: 'Vui lòng điền đầy đủ Mã MH, Tên MH và Số tín chỉ.' });
+        }
+        db = await getDb();
+        const [existing] = await db.execute('SELECT subject_id FROM Subjects WHERE subject_code = ?', [subject_code]);
+        if (existing.length > 0) {
+            return res.status(400).json({ message: 'Mã môn học này đã tồn tại.' });
+        }
+        await db.execute(
+            'INSERT INTO Subjects (subject_code, subject_name, credits) VALUES (?, ?, ?)',
+            [subject_code, subject_name, credits]
+        );
+        res.status(201).json({ message: 'Thêm môn học mới thành công!' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Lỗi server khi thêm môn học.' });
+    } finally {
+        if (db) await db.end();
+    }
+});
+
+// PUT /api/subjects/:id - Cập nhật môn học
+router.put('/:id', verifyToken, isAdmin, async (req, res) => {
+    let db;
+    try {
+        const { id } = req.params;
+        const { subject_code, subject_name, credits } = req.body;
+        db = await getDb();
+        await db.execute(
+            'UPDATE Subjects SET subject_code = ?, subject_name = ?, credits = ? WHERE subject_id = ?',
+            [subject_code, subject_name, credits, id]
+        );
+        res.json({ message: 'Cập nhật môn học thành công!' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Lỗi server khi cập nhật môn học.' });
+    } finally {
+        if (db) await db.end();
+    }
+});
+
+// DELETE /api/subjects/:id - Xóa môn học
+router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
+    let db;
+    try {
+        const { id } = req.params;
+        db = await getDb();
+        // Kiểm tra xem môn học có đang được phân công không
+        const [assigned] = await db.execute('SELECT assignment_id FROM Subject_Assignments WHERE subject_id = ?', [id]);
+        if (assigned.length > 0) {
+            return res.status(400).json({ message: 'Không thể xóa môn học đang có dữ liệu phân công.' });
+        }
+        await db.execute('DELETE FROM Subjects WHERE subject_id = ?', [id]);
+        res.json({ message: 'Xóa môn học thành công.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Lỗi server khi xóa môn học.' });
     } finally {
         if (db) await db.end();
     }

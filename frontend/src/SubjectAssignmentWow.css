@@ -61,6 +61,33 @@
     font-weight: 500;
 }
 
+/* Tabs */
+.wow-tabs {
+    display: flex;
+    background: rgba(241, 245, 249, 0.8);
+    padding: 0.5rem;
+    border-radius: 20px;
+    gap: 0.5rem;
+}
+
+.tab-btn {
+    padding: 0.8rem 1.5rem;
+    border-radius: 16px;
+    border: none;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: transparent;
+    color: #64748b;
+}
+
+.tab-btn.active {
+    background: white;
+    color: #0ea5e9;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
 /* Premium Button */
 .btn-wow {
     background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
@@ -259,6 +286,15 @@
 
 .wow-date-cell { font-size: 0.9rem; font-weight: 700; color: #64748b; }
 
+.role-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 800;
+}
+.role-badge.lead { background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; }
+.role-badge.teach { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+
 .wow-list-actions { display: flex; justify-content: flex-end; }
 
 .btn-icon-wow-rect {
@@ -277,6 +313,22 @@
     color: white;
     transform: scale(1.15) rotate(8deg);
     box-shadow: 0 8px 20px rgba(225, 29, 72, 0.3);
+}
+
+.edit-blue {
+    background: #f0f9ff !important;
+    color: #0284c7 !important;
+    border-color: #e0f2fe !important;
+    width: 44px; height: 44px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.edit-blue:hover {
+    background: #0284c7 !important;
+    color: white !important;
+    transform: scale(1.1);
 }
 
 /* Glass Form Card */

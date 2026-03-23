@@ -4,7 +4,6 @@ import { AuthProvider, AuthContext } from './context/AuthContext';
 import Login from './components/Login';
 import StaffManagement from './components/StaffManagement';
 import SubjectAssignment from './components/SubjectAssignment';
-import TaskAssignment from './components/TaskAssignment';
 import DashboardHome from './components/DashboardHome';
 import stuLogo from './assets/stu_logo.png';
 import './App.css';
@@ -88,8 +87,7 @@ const ProtectedRoute = ({ children }) => {
 
 const getPageTitle = (pathname) => {
     if (pathname === '/dashboard/staff') return 'Quản lý nhân sự';
-    if (pathname === '/dashboard/subjects') return 'Phân công môn học';
-    if (pathname === '/dashboard/tasks') return 'Phân công công việc';
+    if (pathname === '/dashboard/subjects') return 'Quản lý môn học';
     return 'Trang Chủ';
 };
 
@@ -111,13 +109,8 @@ const DashboardLayout = () => {
                     )}
                     <NavItem 
                         icon={IconBook} 
-                        label={user.role === 'admin' ? "Phân công môn học" : "Môn học của tôi"} 
+                        label={user.role === 'admin' ? "Quản lý môn học" : "Môn học của tôi"} 
                         path="/dashboard/subjects" 
-                    />
-                    <NavItem 
-                        icon={IconClipboardList} 
-                        label={user.role === 'admin' ? "Phân công công việc" : "Công việc của tôi"} 
-                        path="/dashboard/tasks" 
                     />
                 </nav>
                 <div className="sidebar-footer">
@@ -151,7 +144,6 @@ const DashboardLayout = () => {
                   <Route index element={<DashboardHome user={user} />} />
                   <Route path="staff" element={<StaffManagement />} />
                   <Route path="subjects" element={<SubjectAssignment />} />
-                  <Route path="tasks" element={<TaskAssignment />} />
                   {/* Default fallback inside dashboard */}
                   <Route path="*" element={<Navigate to="" replace />} />
                 </Routes>
