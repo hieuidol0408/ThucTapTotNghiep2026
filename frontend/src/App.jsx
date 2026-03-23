@@ -52,9 +52,10 @@ const IconClipboardList = (props) => (
     </svg>
 );
 
+// Link Component tùy chỉnh để hiển thị các mục trên thanh Sidebar
 const NavItem = ({ icon: Icon, label, path }) => {
     const location = useLocation();
-    const isActive = location.pathname === path;
+    const isActive = location.pathname === path; // Kiểm tra xem trang hiện tại có trùng với link không
     
     return (
         <Link to={path} className={`nav-item ${isActive ? 'active' : ''}`}>
@@ -76,10 +77,11 @@ const StatCard = ({ label, value, icon: Icon, colorClass }) => (
     </div>
 );
 
+// Component bảo vệ Route: Chỉ cho phép người dùng đã đăng nhập mới được vào Dashboard
 const ProtectedRoute = ({ children }) => {
     const { user, loading } = useContext(AuthContext);
-    if (loading) return null; // Chờ load xong từ localStorage
-    if (!user) return <Navigate to="/login" />;
+    if (loading) return null; // Chờ hệ thống kiểm tra trạng thái đăng nhập từ LocalStorage
+    if (!user) return <Navigate to="/login" />; // Nếu chưa đăng nhập, chuyển hướng về trang Login
     return children;
 };
 
@@ -104,9 +106,11 @@ const DashboardLayout = () => {
                 </div>
                 <nav className="sidebar-nav">
                     <NavItem icon={IconDashboard} label="Trang Chủ" path="/dashboard" />
+                    {/* Chỉ hiển thị mục Quản lý nhân sự nếu người dùng là Admin */}
                     {user.role === 'admin' && (
                         <NavItem icon={IconUsers} label="Quản lý nhân sự" path="/dashboard/staff" />
                     )}
+                    {/* Hiển thị mục Quản lý môn học với nhãn khác nhau tùy theo Role */}
                     <NavItem 
                         icon={IconBook} 
                         label={user.role === 'admin' ? "Quản lý môn học" : "Môn học của tôi"} 

@@ -11,20 +11,21 @@ const taskRoutes = require('./routes/tasks');
 
 const app = express();
 
+// Middleware hỗ trợ CORS (Cho phép Frontend truy cập API) và xử lý JSON
 app.use(cors());
 app.use(express.json());
 
-// Global Request Logger
+// Global Request Logger: Ghi nhận mọi yêu cầu gửi đến Server (Để debug)
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
 });
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/subjects', subjectRoutes);
-app.use('/api/tasks', taskRoutes);
+// Định nghĩa các Route chính cho API
+app.use('/api/auth', authRoutes); // Tuyến đường xác thực (Login)
+app.use('/api/users', userRoutes); // Tuyến đường quản lý nhân sự
+app.use('/api/subjects', subjectRoutes); // Tuyến đường quản lý môn học & phân công
+app.use('/api/tasks', taskRoutes); // Tuyến đường quản lý công việc (Bạn của user mần)
 
 // Serving Frontend Static Files
 const frontendPath = path.join(__dirname, '..', 'frontend', 'dist');

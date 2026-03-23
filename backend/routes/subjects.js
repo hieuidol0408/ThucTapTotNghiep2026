@@ -4,7 +4,7 @@ const mysql = require('mysql2/promise');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-// Database Connection Helper
+// Hàm hỗ trợ kết nối Database nhanh với hỗ trợ tiếng Việt (utf8mb4)
 const getDb = async () => {
     return await mysql.createConnection({
         host: process.env.DB_HOST,
@@ -16,7 +16,7 @@ const getDb = async () => {
     });
 };
 
-// Middleware to verify Token
+// Middleware xác thực Token: Kiểm tra người dùng đã đăng nhập chưa
 const verifyToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -30,7 +30,7 @@ const verifyToken = (req, res, next) => {
     });
 };
 
-// Middleware to verify Admin Role (Requires verifyToken first)
+// Middleware kiểm tra quyền Admin: Chỉ cho phép Ban chủ nhiệm Khoa thực hiện
 const isAdmin = (req, res, next) => {
     if (!req.user || !req.user.role || req.user.role.toLowerCase() !== 'admin') {
         return res.status(403).json({ message: 'Chỉ Admin mới có quyền thực hiện hành động này.' });
@@ -40,13 +40,12 @@ const isAdmin = (req, res, next) => {
 
 // --- SUBJECT ASSIGNMENT ROUTES (Place specific /assignments BEFORE generic /:id) ---
 
-// GET /api/subjects/assignments - Lấy danh sách phân công
+// GET /api/subjects/assignments - Lấy danh sách phân công giảng dạy
 router.get('/assignments', verifyToken, async (req, res) => {
     let db;
-    console.log('DEBUG: Received GET /assignments request');
     try {
         db = await getDb();
-        console.log('DEBUG: DB connected for assignments');
+        // Truy vấn kết hợp JOIN 3 bảng để lấy thông tin chi tiết tên giảng viên và môn học
         let query = `
             SELECT 
                 a.assignment_id as id,
@@ -63,26 +62,20 @@ router.get('/assignments', verifyToken, async (req, res) => {
         `;
         let params = [];
         
-        // Staff only see their own assignments
+        // Nếu là GV (staff): Chỉ thấy danh sách phân công của chính mình
         if (req.user.role && req.user.role.toLowerCase() === 'staff') {
             query += ` WHERE a.user_id = ?`;
             params.push(req.user.user_id || req.user.id);
         }
 
         query += ` ORDER BY a.assignment_id DESC`;
-        console.log('DEBUG: Executing query for assignments:', query, params);
         
         const [rows] = await db.execute(query, params);
-        console.log('DEBUG: Query successful, units found:', rows.length);
         res.json(rows);
     } catch (error) {
-        console.error('DEBUG ERROR:', error);
         res.status(500).json({ message: 'Lỗi server khi lấy danh sách phân công.' });
     } finally {
-        if (db) {
-            await db.end();
-            console.log('DEBUG: DB connection closed');
-        }
+        if (db) await db.end();
     }
 });
 

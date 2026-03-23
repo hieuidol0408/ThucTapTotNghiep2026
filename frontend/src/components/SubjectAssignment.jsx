@@ -36,13 +36,16 @@ const SubjectAssignment = () => {
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
 
+    // useEffect: Tự động chạy khi component được nạp (mount) lần đầu
     useEffect(() => {
         loadData();
     }, []);
 
+    // loadData: Hàm chính để tải tất cả dữ liệu từ API về Frontend
     const loadData = async () => {
         setLoading(true);
         try {
+            // Tải song song: Danh sách phân công, Danh mục môn học, và Danh sách giảng viên
             const [subjs, assigns, users] = await Promise.all([
                 fetchSubjects(),
                 fetchAssignments(),
@@ -66,12 +69,13 @@ const SubjectAssignment = () => {
 
     // --- HANDLERS FOR ASSIGNMENT ---
 
+    // handleAssignSubmit: Xử lý khi Admin nhấn "Giao việc" (Phân công môn học)
     const handleAssignSubmit = async (e) => {
         e.preventDefault();
         try {
             await createAssignment(assignForm);
             setMessage('🎯 Đã phân công môn học thành công!');
-            loadData();
+            loadData(); // Tải lại dữ liệu sau khi thêm mới
             setAssignForm({ ...assignForm, subject_id: '' });
             setTimeout(() => setMessage(''), 4000);
         } catch (err) {
@@ -80,6 +84,7 @@ const SubjectAssignment = () => {
         }
     };
 
+    // handleDeleteAssignment: Xóa một bản ghi phân công
     const handleDeleteAssignment = async (id) => {
         if (!window.confirm('Bạn có chắc chắn muốn xóa phân công này?')) return;
         try {
@@ -89,6 +94,7 @@ const SubjectAssignment = () => {
             setTimeout(() => setMessage(''), 4000);
         } catch (err) {
             setError('Lỗi khi xóa phân công.');
+            setTimeout(() => setError(''), 4000);
         }
     };
 

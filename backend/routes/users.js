@@ -17,7 +17,7 @@ const getDb = async () => {
     });
 };
 
-// Middleware to verify Admin Role
+// Middleware kiểm tra quyền Admin: Chỉ cho phép Ban chủ nhiệm Khoa truy cập
 const isAdmin = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -30,12 +30,9 @@ const isAdmin = (req, res, next) => {
             return res.status(403).json({ message: 'Token không hợp lệ.' });
         }
         
-        // Support both {user: {...}} and {...} structures
         const user = decoded.user || decoded;
-        console.log('DEBUG: Authorizing user:', user.username, 'Role:', user.role);
-
+        // Kiểm tra xem người dùng có phải là Admin không
         if (!user || !user.role || user.role.toLowerCase() !== 'admin') {
-            console.warn('DEBUG: Authorization failed for role:', user?.role);
             return res.status(403).json({ message: 'Chỉ Admin mới có quyền truy cập.' });
         }
         
@@ -44,12 +41,13 @@ const isAdmin = (req, res, next) => {
     });
 };
 
-// GET /stats - Summary statistics for dashboard (phải đặt TRƯỚC /:id)
+// GET /stats - Lấy thông tin thống kê tổng hợp để hiển thị trên Dashboard (Widget)
 router.get('/stats', isAdmin, async (req, res) => {
     let db;
     try {
         db = await getDb();
         
+        // Đếm tổng số nhân sự
         const [userCount] = await db.execute('SELECT COUNT(*) as count FROM Users');
         
         let taskCount = [{ count: 0 }];
@@ -57,11 +55,12 @@ router.get('/stats', isAdmin, async (req, res) => {
         let lateCount = [{ count: 0 }];
         
         try {
+            // Đếm số lượng công việc theo các trạng thái khác nhau
             [taskCount] = await db.execute('SELECT COUNT(*) as count FROM Tasks');
             [doneCount] = await db.execute('SELECT COUNT(*) as count FROM Tasks WHERE status = "completed"');
             [lateCount] = await db.execute('SELECT COUNT(*) as count FROM Tasks WHERE status = "late"');
         } catch (e) {
-            // Bảng tasks chưa tồn tại thì bỏ qua
+            // Bỏ qua lỗi nếu bảng Tasks chưa được tạo (cho teammate mần sau)
         }
 
         res.json({
@@ -74,7 +73,6 @@ router.get('/stats', isAdmin, async (req, res) => {
                 : 0
         });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ message: 'Lỗi server khi lấy thống kê.' });
     } finally {
         if (db) await db.end();
