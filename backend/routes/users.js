@@ -171,26 +171,9 @@ router.put('/:id', isAdmin, async (req, res) => {
     }
 });
 
-// DELETE /:id - Delete user
+// DELETE /:id - Xóa nhân sự (Disabled - Dùng chức năng Khóa hồ sơ thay thế)
 router.delete('/:id', isAdmin, async (req, res) => {
-    let db;
-    try {
-        const { id } = req.params;
-        db = await getDb();
-
-        // Prevent deleting yourself (optional but safe)
-        if (parseInt(id) === req.user.id) {
-            return res.status(400).json({ message: 'Bạn không thể tự xóa tài khoản của mình.' });
-        }
-
-        await db.execute('DELETE FROM Users WHERE user_id = ?', [id]);
-        res.json({ message: 'Xóa nhân sự thành công.' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Lỗi server khi xóa nhân sự.' });
-    } finally {
-        if (db) await db.end();
-    }
+    res.status(405).json({ message: 'Chức năng xóa nhân sự đã bị vô hiệu hóa. Vui lòng sử dụng chức năng Khóa hồ sơ.' });
 });
 
 // Route /stats đã được chuyển lên trước /:id ở phía trên
