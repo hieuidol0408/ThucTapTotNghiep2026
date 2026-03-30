@@ -41,3 +41,4 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running at http://localhost:${PORT}`);
     console.log(`Neu khong vao duoc localhost, hay thu: http://127.0.0.1:${PORT}`);
 });
+app.use('/api/reminders', require('./routes/reminders'));
