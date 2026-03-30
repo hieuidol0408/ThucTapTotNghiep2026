@@ -42,3 +42,28 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`Neu khong vao duoc localhost, hay thu: http://127.0.0.1:${PORT}`);
 });
 app.use('/api/reminders', require('./routes/reminders'));
+const cron = require('node-cron');
+
+// Cron job chạy mỗi phút 1 lần để kiểm tra nhắc nhở
+cron.schedule('* * * * *', async () => {
+    try {
+        const now = new Date();
+        // Lấy các nhắc nhở đang BẬT (is_active = 1) và thời gian nhắc nhở <= thời gian hiện tại
+        const [dueReminders] = await db.query(
+            'SELECT * FROM reminders WHERE is_active = 1 AND reminder_time <= ?', 
+            [now]
+        );
+
+        if (dueReminders.length > 0) {
+            dueReminders.forEach(async (reminder) => {
+                // Ở đây bạn có thể cấu hình gửi Email (nodemailer) hoặc gửi qua Socket.io (realtime)
+                console.log(`[THÔNG BÁO] Gửi đến User ${reminder.user_id}: ${reminder.message}`);
+                
+                // Sau khi thông báo xong, có thể xóa nhắc nhở hoặc tắt nó đi (is_active = 0)
+                await db.query('UPDATE reminders SET is_active = 0 WHERE reminder_id = ?', [reminder.reminder_id]);
+            });
+        }
+    } catch (error) {
+        console.error("Lỗi khi chạy cron job nhắc nhở:", error);
+    }
+});
