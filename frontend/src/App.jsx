@@ -98,28 +98,63 @@ const DashboardLayout = () => {
     const location = useLocation();
 
     return (
-        <div className="dashboard-layout">
-            <aside className="sidebar">
-                <div className="sidebar-logo">
-                    <img src={stuLogo} alt="STU Logo" className="logo-img-wow" />
-                    <span>STU WORK</span>
+        <div className="wow-layout-root" style={{ 
+            display: 'block', 
+            position: 'relative', 
+            minHeight: '100vh', 
+            width: '100%',
+            background: '#f8fafc' 
+        }}>
+            {/* Thanh Menu bên trái - ÉP HIỂN THỊ TUYỆT ĐỐI */}
+            <aside className="wow-sidebar-fixed" style={{ 
+                width: '280px', 
+                background: '#0f172a', 
+                position: 'fixed', 
+                top: 0, 
+                left: 0, 
+                bottom: 0, 
+                zIndex: 999999, // Siêu ưu tiên
+                display: 'flex',
+                flexDirection: 'column',
+                padding: '2rem 1.5rem',
+                boxShadow: '4px 0 25px rgba(0,0,0,0.3)',
+                color: 'white',
+                visibility: 'visible',
+                opacity: 1
+            }}>
+                <div className="sidebar-logo" style={{ marginBottom: '3rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <img src={stuLogo} alt="STU Logo" className="logo-img-wow" style={{ width: '45px', height: '45px', borderRadius: '12px', background: 'white', padding: '5px' }} />
+                    <span style={{ color: 'white', fontWeight: 800, fontSize: '1.4rem', letterSpacing: '1px' }}>STU WORK</span>
                 </div>
-                <nav className="sidebar-nav">
+                
+                <nav className="sidebar-nav" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <NavItem icon={IconDashboard} label="Trang Chủ" path="/dashboard" />
-                    {/* Chỉ hiển thị mục Quản lý nhân sự nếu người dùng là Admin */}
                     {user.role === 'admin' && (
                         <NavItem icon={IconUsers} label="Quản lý nhân sự" path="/dashboard/staff" />
                     )}
-                    {/* Hiển thị mục Quản lý môn học với nhãn khác nhau tùy theo Role */}
                     <NavItem 
                         icon={IconBook} 
                         label={user.role === 'admin' ? "Quản lý môn học" : "Môn học của tôi"} 
                         path="/dashboard/subjects" 
                     />
                 </nav>
-                <div className="sidebar-footer">
-                    <button className="logout-btn" onClick={logoutUser}>
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
+
+                <div className="sidebar-footer" style={{ marginTop: 'auto', paddingTop: '2rem', borderTop: '1px dashed rgba(255,255,255,0.2)' }}>
+                    <button className="logout-btn" onClick={logoutUser} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        width: '100%',
+                        padding: '12px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#94a3b8',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        borderRadius: '10px',
+                        transition: 'all 0.3s'
+                    }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '22px', height: '22px' }}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
                         </svg>
                         Đăng xuất
@@ -127,18 +162,43 @@ const DashboardLayout = () => {
                 </div>
             </aside>
             
-            <main className="main-content">
-                <header className="header">
+            {/* Nội dung chính - PHẢI CÓ LỀ TRÁI 280PX */}
+            <main className="wow-main-area" style={{ 
+                marginLeft: '280px', 
+                minHeight: '100vh',
+                display: 'flex',
+                flexDirection: 'column',
+                background: '#f8fafc',
+                position: 'relative'
+            }}>
+                <header className="wow-header-top" style={{
+                    padding: '1.2rem 2.5rem',
+                    background: 'white',
+                    borderBottom: '1px solid #e2e8f0',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 1000
+                }}>
                     <div className="header-left">
-                        <h2>{getPageTitle(location.pathname)}</h2>
-                        <p className="header-subtitle">Chào mừng trở lại, {user.full_name}!</p>
+                        <h2 style={{ margin: 0, fontSize: '1.5rem', color: '#0f172a', fontWeight: 800 }}>{getPageTitle(location.pathname)}</h2>
+                        <p className="header-subtitle" style={{ margin: '4px 0 0 0', color: '#64748b', fontWeight: 500 }}>Chào mừng trở lại, {user.full_name}!</p>
                     </div>
-                    <div className="user-profile">
-                        <div className="user-info">
-                            <span className="user-name">{user.full_name}</span>
-                            <span className="user-role badge">{user.role === 'admin' ? 'Ban chủ nhiệm Khoa' : 'Giảng viên - Nhân viên'}</span>
+                    <div className="user-profile" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <div className="user-info" style={{ textAlign: 'right' }}>
+                            <div className="user-name" style={{ fontWeight: 700, color: '#0f172a' }}>{user.full_name}</div>
+                            <div className="user-role badge" style={{ fontSize: '0.75rem', background: '#e0e7ff', color: '#4f46e5', padding: '2px 8px', borderRadius: '4px', fontWeight: 700, marginTop: '2px' }}>
+                                {user.role === 'admin' ? 'Ban chủ nhiệm Khoa' : 'Giảng viên - Nhân viên'}
+                            </div>
                         </div>
-                        <div className="avatar">
+                        <div className="avatar" style={{ 
+                            width: '42px', height: '42px', borderRadius: '12px', 
+                            background: 'linear-gradient(135deg, #4f46e5 0%, #0ea5e9 100%)', 
+                            color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontWeight: 800, fontSize: '1.2rem'
+                        }}>
                             {user.full_name.charAt(0)}
                         </div>
                     </div>

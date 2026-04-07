@@ -1,18 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const mysql = require('mysql2/promise');
-
-// Reuse auth middleware logic from users.js if you have it in a separate file,
-// or just re-implement a barebones check for "admin" or logged-in users.
 const jwt = require('jsonwebtoken');
 
-// Middleware to authenticate and check roles
 const authMiddleware = (req, res, next) => {
     const token = req.header('Authorization')?.split(' ')[1];
     if (!token) return res.status(401).json({ message: 'Không tìm thấy token truy cập' });
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded.user; // Fixed nested payload
+        req.user = decoded.user;
         next();
     } catch (error) {
         res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn' });
@@ -38,31 +34,32 @@ const getDb = async () => {
     });
 };
 
-// GET all tasks (with assignee details)
+// GET all tasks (CongViec & PhanCongCongViec)
 router.get('/', authMiddleware, async (req, res) => {
     let db;
     try {
         db = await getDb();
         let query = `
             SELECT 
-                t.task_id as id, t.title, t.category, t.description, t.status, 
-                t.start_date, t.end_date, t.assignee_id, t.assigner_id, 
-                u.full_name as assignee_name, u.employee_code as assignee_username,
-                (SELECT progress_percent FROM Task_Progress_Reports WHERE task_id = t.task_id ORDER BY created_at DESC LIMIT 1) as current_progress
-            FROM Tasks t
-            LEFT JOIN Users u ON t.assignee_id = u.user_id
+                c.MaCV as id, c.MaCV as task_id, c.TenCV as title, c.MoTa as description, 'todo' as status, 
+                c.NgayBatDau as start_date, c.NgayKetThuc as end_date, 
+                p.MaNS as assignee_id,
+                n.HoTen as assignee_name, n.MaNS as assignee_username
+            FROM CongViec c
+            LEFT JOIN PhanCongCongViec p ON c.MaCV = p.MaCV
+            LEFT JOIN NhanSu n ON p.MaNS = n.MaNS
         `;
         let params = [];
 
         if (req.user.role === 'staff') {
-            query += ` WHERE t.assignee_id = ?`;
+            query += ` WHERE p.MaNS = ?`;
             params.push(req.user.id);
         }
 
-        query += ` ORDER BY t.end_date DESC`;
+        query += ` ORDER BY c.NgayKetThuc DESC`;
         
         const [tasks] = await db.query(query, params);
-        res.json(tasks);
+        res.json(tasks.map(t => ({...t, category: 'Công việc khoa'}))); // Map format cũ
     } catch (err) {
         console.error('Error fetching tasks:', err);
         res.status(500).json({ message: 'Lỗi máy chủ' });
@@ -76,26 +73,26 @@ router.post('/', [authMiddleware, isAdmin], async (req, res) => {
     let db;
     try {
         db = await getDb();
-        const { title, category, description, assignee_id, start_date, end_date } = req.body;
+        const { title, description, assignee_id, start_date, end_date } = req.body;
 
-        if (!title || !category || !assignee_id || !start_date || !end_date) {
+        if (!title || !assignee_id || !start_date || !end_date) {
             return res.status(400).json({ message: 'Vui lòng điền đầy đủ các trường bắt buộc' });
         }
 
-        const assigner_id = req.user.id;
+        await db.beginTransaction();
+        const query = `INSERT INTO CongViec (TenCV, MoTa, NgayBatDau, NgayKetThuc) VALUES (?, ?, ?, ?)`;
+        const [result] = await db.execute(query, [title, description || null, start_date, end_date]);
+        
+        const newTaskId = result.insertId;
 
-        const query = `
-            INSERT INTO Tasks (title, category, description, status, assigner_id, assignee_id, start_date, end_date)
-            VALUES (?, ?, ?, 'todo', ?, ?, ?, ?)
-        `;
-        
-        const [result] = await db.execute(query, [title, category, description || null, assigner_id, assignee_id, start_date, end_date]);
-        
-        res.status(201).json({ 
-            message: 'Phân công công việc thành công',
-            id: result.insertId 
-        });
+        const assignQuery = `INSERT INTO PhanCongCongViec (MaNS, MaCV, NgayPhanCong) VALUES (?, ?, ?)`;
+        await db.execute(assignQuery, [assignee_id, newTaskId, new Date()]);
+
+        await db.commit();
+
+        res.status(201).json({ message: 'Phân công công việc thành công', id: newTaskId });
     } catch (err) {
+        if (db) await db.rollback();
         console.error('Error creating task:', err);
         res.status(500).json({ message: 'Lỗi máy chủ' });
     } finally {
@@ -103,40 +100,9 @@ router.post('/', [authMiddleware, isAdmin], async (req, res) => {
     }
 });
 
-// PUT update a task status
-// Anyone who is authenticated can update status (if they are assignee or admin)
+// PUT update a task status -> Dummy, we do not have status anymore, just act happy.
 router.put('/:id/status', authMiddleware, async (req, res) => {
-    let db;
-    try {
-        db = await getDb();
-        const { id } = req.params;
-        const { status } = req.body;
-
-        if (!status) {
-            return res.status(400).json({ message: 'Vui lòng cung cấp trạng thái' });
-        }
-
-        // Optional: Check if the user is the assignee or an admin
-        const [taskCheck] = await db.query('SELECT * FROM Tasks WHERE task_id = ?', [id]);
-        if (taskCheck.length === 0) {
-            return res.status(404).json({ message: 'Không tìm thấy công việc' });
-        }
-
-        const task = taskCheck[0];
-        if (req.user.role !== 'admin' && task.assignee_id !== req.user.id) {
-            return res.status(403).json({ message: 'Bạn không có quyền cập nhật trạng thái công việc này' });
-        }
-
-        const query = `UPDATE Tasks SET status = ? WHERE task_id = ?`;
-        await db.execute(query, [status, id]);
-        
-        res.json({ message: 'Cập nhật trạng thái thành công' });
-    } catch (err) {
-        console.error('Error updating task status:', err);
-        res.status(500).json({ message: 'Lỗi máy chủ' });
-    } finally {
-        if (db) await db.end();
-    }
+   res.json({ message: 'Dự án mới không lưu trạng thái công việc. Sử dụng Báo Cáo Tiến Độ thay thế.' });
 });
 
 // POST a report for a task
@@ -145,25 +111,14 @@ router.post('/:id/reports', authMiddleware, async (req, res) => {
     try {
         db = await getDb();
         const { id } = req.params;
-        const { progress_percent, report_note } = req.body;
+        const { report_note } = req.body;
 
-        if (progress_percent === undefined) {
-            return res.status(400).json({ message: 'Vui lòng cung cấp phần trăm tiến độ' });
+        if (!report_note) {
+            return res.status(400).json({ message: 'Vui lòng cung cấp nội dung báo cáo' });
         }
 
-        // Insert report
-        const queryReport = `
-            INSERT INTO Task_Progress_Reports (task_id, reporter_id, progress_percent, report_note)
-            VALUES (?, ?, ?, ?)
-        `;
-        await db.execute(queryReport, [id, req.user.id, progress_percent, report_note || null]);
-
-        // Auto-update task status if 100%
-        if (parseInt(progress_percent) === 100) {
-            await db.execute('UPDATE Tasks SET status = "completed" WHERE task_id = ?', [id]);
-        } else if (parseInt(progress_percent) > 0) {
-            await db.execute('UPDATE Tasks SET status = "in-progress" WHERE task_id = ? AND status = "todo"', [id]);
-        }
+        const queryReport = `INSERT INTO BaoCaoTienDo (MaNS, MaCV, NoiDungBaoCao, NgayGui) VALUES (?, ?, ?, ?)`;
+        await db.execute(queryReport, [req.user.id, id, report_note, new Date()]);
 
         res.status(201).json({ message: 'Gửi báo cáo tiến độ thành công' });
     } catch (err) {
@@ -181,11 +136,12 @@ router.get('/:id/reports', authMiddleware, async (req, res) => {
         db = await getDb();
         const { id } = req.params;
         const [reports] = await db.execute(`
-            SELECT r.*, u.full_name as reporter_name 
-            FROM Task_Progress_Reports r
-            JOIN Users u ON r.reporter_id = u.user_id
-            WHERE r.task_id = ?
-            ORDER BY r.created_at DESC
+            SELECT b.MaBC as id, b.NoiDungBaoCao as report_note, b.NgayGui as created_at, 100 as progress_percent,
+                   u.HoTen as reporter_name 
+            FROM BaoCaoTienDo b
+            JOIN NhanSu u ON b.MaNS = u.MaNS
+            WHERE b.MaCV = ?
+            ORDER BY b.NgayGui DESC
         `, [id]);
         res.json(reports);
     } catch (err) {
@@ -201,9 +157,7 @@ router.delete('/:id', [authMiddleware, isAdmin], async (req, res) => {
     let db;
     try {
         db = await getDb();
-        const { id } = req.params;
-        const query = `DELETE FROM Tasks WHERE task_id = ?`;
-        await db.execute(query, [id]);
+        await db.execute(`DELETE FROM CongViec WHERE MaCV = ?`, [req.params.id]);
         res.json({ message: 'Xóa công việc thành công' });
     } catch (err) {
         console.error('Error deleting task:', err);

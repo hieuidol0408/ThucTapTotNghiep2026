@@ -21,8 +21,11 @@ const SubjectAssignment = () => {
     const [assignForm, setAssignForm] = useState({
         user_id: '',
         subject_id: '',
-        teaching_role: 'Giảng dạy',
-        semester: 'Học kỳ 1 - 2023-2024'
+        ngay_bat_dau: '',
+        ngay_ket_thuc: '',
+        ca: 1,
+        phong: '',
+        thu: 2
     });
 
     // Form State (Subject Management)
@@ -220,31 +223,65 @@ const SubjectAssignment = () => {
                         </div>
 
                         <div className="wow-input-group">
-                            <label>Vai trò</label>
+                            <label>Thời gian bắt đầu</label>
                             <div className="wow-input-field-wrapper">
-                                <select 
-                                    value={assignForm.teaching_role} 
-                                    onChange={(e) => setAssignForm({...assignForm, teaching_role: e.target.value})}
+                                <input 
+                                    type="date"
+                                    value={assignForm.ngay_bat_dau} 
+                                    onChange={(e) => setAssignForm({...assignForm, ngay_bat_dau: e.target.value})}
                                     required
-                                >
-                                    <option value="Trưởng môn học">Phụ trách môn học (Trưởng môn học)</option>
-                                    <option value="Giảng dạy">Giảng dạy</option>
-                                </select>
+                                />
                             </div>
                         </div>
 
                         <div className="wow-input-group">
-                            <label>Học kỳ</label>
+                            <label>Thời gian kết thúc</label>
                             <div className="wow-input-field-wrapper">
-                                <select 
-                                    value={assignForm.semester} 
-                                    onChange={(e) => setAssignForm({...assignForm, semester: e.target.value})}
+                                <input 
+                                    type="date"
+                                    value={assignForm.ngay_ket_thuc} 
+                                    onChange={(e) => setAssignForm({...assignForm, ngay_ket_thuc: e.target.value})}
                                     required
-                                >
-                                    <option value="Học kỳ 1 - 2023-2024">Học kỳ 1 - 2023-2024</option>
-                                    <option value="Học kỳ 2 - 2023-2024">Học kỳ 2 - 2023-2024</option>
-                                    <option value="Học kỳ hè - 2023-2024">Học kỳ hè - 2023-2024</option>
-                                </select>
+                                />
+                            </div>
+                        </div>
+
+                        <div className="wow-input-group">
+                            <label>Thứ (2-7)</label>
+                            <div className="wow-input-field-wrapper">
+                                <input 
+                                    type="number"
+                                    min="2" max="8"
+                                    value={assignForm.thu} 
+                                    onChange={(e) => setAssignForm({...assignForm, thu: e.target.value})}
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="wow-input-group">
+                            <label>Ca học</label>
+                            <div className="wow-input-field-wrapper">
+                                <input 
+                                    type="number"
+                                    min="1" max="10"
+                                    value={assignForm.ca} 
+                                    onChange={(e) => setAssignForm({...assignForm, ca: e.target.value})}
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="wow-input-group" style={{gridColumn: 'span 2'}}>
+                            <label>Phòng học</label>
+                            <div className="wow-input-field-wrapper">
+                                <input 
+                                    type="text"
+                                    placeholder="VD: A1-102"
+                                    value={assignForm.phong} 
+                                    onChange={(e) => setAssignForm({...assignForm, phong: e.target.value})}
+                                    required
+                                />
                             </div>
                         </div>
 
@@ -341,11 +378,11 @@ const SubjectAssignment = () => {
                                     <span className="wow-subject-name">{a.subject_name}</span>
                                     <span className="wow-subject-code">{a.subject_code}</span>
                                 </div>
-                                <div className="wow-credits-badge">{a.credits} Tín chỉ</div>
-                                <div className="wow-semester-badge">{a.semester}</div>
+                                <div className="wow-credits-badge">Thứ {a.Thu} - Ca {a.Ca}</div>
+                                <div className="wow-semester-badge">Phòng: {a.Phong}</div>
                                 <div className="wow-role-cell">
-                                    <span className={`role-badge ${a.teaching_role === 'Trưởng môn học' ? 'lead' : 'teach'}`}>
-                                        {a.teaching_role}
+                                    <span style={{fontSize:'0.8rem', color:'#64748b'}}>
+                                        {new Date(a.NgayBatDau).toLocaleDateString()} - {new Date(a.NgayKetThuc).toLocaleDateString()}
                                     </span>
                                 </div>
                                 {isAdmin && (

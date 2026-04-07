@@ -10,31 +10,29 @@ router.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        // Check if user exists (by employee_code or email)
-        const [rows] = await db.execute('SELECT * FROM Users WHERE employee_code = ? OR email = ?', [username, username]);
+        // Kiểm tra xem Nhân Sự có tồn tại không (bằng MaNS hoặc Email)
+        const [rows] = await db.execute('SELECT * FROM NhanSu WHERE MaNS = ? OR Email = ?', [username, username]);
         
         if (rows.length === 0) {
-            return res.status(400).json({ message: 'Tên hoặc mã đăng nhập không tồn tại' });
+            return res.status(400).json({ message: 'Tên đăng nhập hoặc mã không tồn tại' });
         }
 
         const user = rows[0];
 
-        // Check password
-        const isMatch = await bcrypt.compare(password, user.password_hash);
+        // So sánh mật khẩu
+        const isMatch = await bcrypt.compare(password, user.MatKhau);
         if (!isMatch) {
             return res.status(400).json({ message: 'Mật khẩu không chính xác' });
         }
 
-        // Create JWT
-
-        // Create JWT
+        // Tạo JWT Payload (Lưu giữ thông tin Tiếng Việt)
         const payload = {
             user: {
-                id: user.user_id,
-                username: user.employee_code, // Keeping frontend compatibility
-                email: user.email,
-                role: user.role,
-                full_name: user.full_name
+                id: user.MaNS, 
+                username: user.MaNS,
+                email: user.Email,
+                role: user.Quyen,
+                full_name: user.HoTen
             }
         };
 

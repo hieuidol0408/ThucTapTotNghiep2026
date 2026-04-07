@@ -2,6 +2,8 @@ const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
 const path = require('path');
+const fs = require('fs');
+
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 const seed = async () => {
@@ -12,81 +14,96 @@ const seed = async () => {
             password: process.env.DB_PASS,
             database: process.env.DB_NAME,
             port: process.env.DB_PORT,
+            multipleStatements: true, // Cho phép dán nhiều câu lệnh SQL script
             charset: 'utf8mb4'
         });
 
-        console.log('Connected to DB. Fixing character sets...');
+        console.log('Connected to DB. Running DB Schema rewrite...');
 
-        // 0. Fix Database and existing tables to support Vietnamese
-        await db.execute('ALTER DATABASE qlcongvieckhoa CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
-        await db.execute('ALTER TABLE users CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+        // Tắt strict foreign keys khi xóa
+        await db.execute('SET FOREIGN_KEY_CHECKS = 0');
         
-        // 1. Drop and Recreate tasks table with utf8mb4
-        await db.execute('DROP TABLE IF EXISTS tasks');
-        await db.execute(`
-            CREATE TABLE tasks (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                title VARCHAR(255) NOT NULL,
-                description TEXT,
-                status ENUM('todo', 'in-progress', 'completed', 'late') DEFAULT 'todo',
-                assigned_to INT,
-                due_date DATE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL
-            ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
-        `);
+        // Cố gắng xóa các bảng cũ tiếng Anh (nếu có)
+        const oldTables = ['Task_Progress_Reports', 'Subject_Assignments', 'Tasks', 'Subjects', 'Users', 'tasks', 'users'];
+        for (let tb of oldTables) {
+            await db.execute(`DROP TABLE IF EXISTS ${tb}`);
+        }
 
-        console.log('Tables fixed. Adding users...');
+        // Xóa bảng mới (để tạo lại từ đầu nếu cần)
+        const newTables = ['BaoCaoTienDo', 'PhanCongCongViec', 'TKB', 'CongViec', 'MonHoc', 'NhanSu'];
+        for (let tb of newTables) {
+            await db.execute(`DROP TABLE IF EXISTS ${tb}`);
+        }
 
-        // 2. Add Users
+        // Đọc nội dung file database.sql và thực thi
+        const sqlSchema = fs.readFileSync(path.join(__dirname, 'database.sql'), 'utf-8');
+        await db.query(sqlSchema);
+        console.log('Database Schema executed.');
+
+        await db.execute('SET FOREIGN_KEY_CHECKS = 1');
+
+        console.log('Tables created. Adding NhanSu data...');
+
+        // 1. Thêm Nhân Sự (NhanSu)
         const password = await bcrypt.hash('123456', 10);
-        const users = [
-            ['nva', password, 'Nguyễn Văn An', 'staff'],
-            ['ltb', password, 'Lê Thị Bình', 'staff'],
-            ['trc', password, 'Trần Văn Cường', 'staff'],
-            ['pmd', password, 'Phạm Minh Đức', 'staff'],
-            ['hth', password, 'Hoàng Thu Hà', 'staff'],
-            ['vtl', password, 'Vũ Tiến Lộc', 'staff'],
-            ['dkp', password, 'Đặng Kim Phượng', 'staff'],
-            ['qtt', password, 'Quách Thành Tâm', 'staff'],
-            ['lxh', password, 'Lý Xuân Hòa', 'staff'],
-            ['bnm', password, 'Bùi Ngọc Mai', 'staff']
+        const nhansuData = [
+            ['AD001', 'Quản Trị Viên', '1980-01-01', 'admin@khoa.edu.vn', password, 'admin'],
+            ['GV001', 'Nguyễn Văn An', '1990-05-12', 'nva@khoa.edu.vn', password, 'staff'],
+            ['GV002', 'Lê Thị Bình', '1992-08-20', 'ltb@khoa.edu.vn', password, 'staff'],
+            ['GV003', 'Trần Văn Cường', '1985-02-15', 'tvc@khoa.edu.vn', password, 'staff'],
+            ['GV004', 'Phạm Minh Đức', '1995-12-05', 'pmd@khoa.edu.vn', password, 'staff']
         ];
 
-        for (const u of users) {
-          try {
-              await db.execute('INSERT INTO users (username, password, full_name, role) VALUES (?, ?, ?, ?)', u);
-              console.log(`Added user: ${u[0]}`);
-          } catch (e) { 
-              // console.log(`User ${u[0]} exists.`);
-          }
+        for (const u of nhansuData) {
+            await db.execute(
+                'INSERT INTO NhanSu (MaNS, HoTen, NgaySinh, Email, MatKhau, Quyen) VALUES (?, ?, ?, ?, ?, ?)', 
+                u
+            );
         }
 
-        // 3. Add Tasks
-        const [userRows] = await db.execute('SELECT id FROM users WHERE role = "staff"');
-        const userIds = userRows.map(u => u.id);
-
-        if (userIds.length > 0) {
-            const taskTitles = [
-                'Soạn thảo văn bản hành chính', 'Lập kế hoạch tuần', 'Họp hội đồng khoa',
-                'Kiểm tra thiết bị phòng máy', 'Cập nhật website khoa', 'Chấm bài thi giữa kỳ',
-                'Tổ chức hội thảo nghiên cứu', 'Quản lý hồ sơ sinh viên', 'Chuẩn bị tài liệu giảng dạy',
-                'Vệ sinh phòng thực hành', 'Hỗ trợ sinh viên đăng ký học', 'Lên danh sách thi tốt nghiệp'
-            ];
-
-            for (let i = 1; i <= 25; i++) {
-                const title = taskTitles[i % taskTitles.length] + ' #' + i;
-                const status = ['todo', 'in-progress', 'completed', 'late'][Math.floor(Math.random() * 4)];
-                const userId = userIds[Math.floor(Math.random() * userIds.length)];
-                const dueDate = new Date();
-                dueDate.setDate(dueDate.getDate() + (Math.floor(Math.random() * 20) - 5)); 
-                
-                await db.execute('INSERT INTO tasks (title, status, assigned_to, due_date) VALUES (?, ?, ?, ?)', [
-                    title, status, userId, dueDate
-                ]);
-            }
-            console.log('Added 25 sample tasks with Vietnamese text.');
+        console.log('Adding MonHoc data...');
+        // 2. Thêm Môn học (MonHoc)
+        const monhocData = [
+            ['IT001', 'Nhập môn Lập trình', 3],
+            ['IT002', 'Cấu trúc dữ liệu và giải thuật', 4],
+            ['IT003', 'Hệ quản trị CSDL', 3],
+            ['IT004', 'Mạng máy tính', 3]
+        ];
+        
+        for (const m of monhocData) {
+            await db.execute(
+                'INSERT INTO MonHoc (MaMH, TenMH, SoTinChi) VALUES (?, ?, ?)',
+                m
+            );
         }
+
+        console.log('Adding CongViec data...');
+        // 3. Thêm Công Việc (CongViec)
+        const congviecData = [
+            ['Soạn thảo văn bản hành chính', 'Cần văn bản báo cáo cho hội đồng', '2026-04-01 08:00:00', '2026-04-10 17:00:00'],
+            ['Lập kế hoạch tuần', 'Lên timeline lịch thi', '2026-04-05 08:00:00', '2026-04-12 17:00:00'],
+            ['Chấm bài thi giữa kỳ', 'Môn IT001 khoảng 500 bài', '2026-04-06 08:00:00', '2026-04-15 17:00:00']
+        ];
+        
+        for (const cv of congviecData) {
+            await db.execute(
+                'INSERT INTO CongViec (TenCV, MoTa, NgayBatDau, NgayKetThuc) VALUES (?, ?, ?, ?)',
+                cv
+            );
+        }
+
+        // 4. Thêm TKB (Phân công bộ môn)
+        await db.execute("INSERT INTO TKB (MaNS, MaMH, NgayBatDau, NgayKetThuc, Ca, Phong, Thu) VALUES ('GV001', 'IT001', '2026-03-01', '2026-06-30', 1, 'A1-102', 2)");
+        await db.execute("INSERT INTO TKB (MaNS, MaMH, NgayBatDau, NgayKetThuc, Ca, Phong, Thu) VALUES ('GV002', 'IT002', '2026-03-01', '2026-06-30', 3, 'A2-205', 4)");
+
+        // 5. Thêm Phân công công việc
+        // Từ CongViec list lấy ID 1, 2, 3
+        await db.execute("INSERT INTO PhanCongCongViec (MaNS, MaCV, NgayPhanCong) VALUES ('GV001', 1, '2026-04-05')");
+        await db.execute("INSERT INTO PhanCongCongViec (MaNS, MaCV, NgayPhanCong) VALUES ('GV002', 2, '2026-04-06')");
+        await db.execute("INSERT INTO PhanCongCongViec (MaNS, MaCV, NgayPhanCong) VALUES ('GV003', 3, '2026-04-07')");
+
+        // 6. Thêm Báo cáo tiến độ
+        await db.execute("INSERT INTO BaoCaoTienDo (MaNS, MaCV, NoiDungBaoCao, NgayGui) VALUES ('GV001', 1, 'Đã viết xong sườn báo cáo', '2026-04-06 09:30:00')");
 
         console.log('Seeding completed successfully!');
         await db.end();
