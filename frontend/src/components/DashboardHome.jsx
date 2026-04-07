@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { fetchTasks } from '../api/tasks';
+import { generateHRMReport } from '../utils/dashboardExport';
+import stuLogo from '../assets/stu_logo.png';
 import '../DashboardWow.css';
 
 const StatCardWow = ({ label, value, trend, isUp, icon: Icon, colorClass }) => (
@@ -36,7 +39,9 @@ const DashboardHome = ({ user }) => {
         lateTasks: 0,
         percentComplete: 0
     });
+    const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [downloading, setDownloading] = useState(false);
     const [now, setNow] = useState(new Date());
 
     useEffect(() => {
@@ -50,13 +55,15 @@ const DashboardHome = ({ user }) => {
                 const token = localStorage.getItem('token');
                 const headers = { Authorization: `Bearer ${token}` };
                 
-                const [usersRes, statsRes] = await Promise.all([
+                const [usersRes, statsRes, tasksData] = await Promise.all([
                     axios.get('/api/users', { headers }),
-                    axios.get('/api/users/stats', { headers })
+                    axios.get('/api/users/stats', { headers }),
+                    fetchTasks()
                 ]);
                 
                 setRecentUsers(usersRes.data.slice(-5).reverse());
                 setStatsData(statsRes.data);
+                setTasks(tasksData);
             } catch (err) {
                 console.error('Error fetching dashboard data:', err);
             } finally {
@@ -65,6 +72,25 @@ const DashboardHome = ({ user }) => {
         };
         fetchData();
     }, []);
+
+    const handleDownloadReport = async () => {
+        console.log('PDF Export V2 Triggered');
+        try {
+            setDownloading(true);
+            await generateHRMReport({
+                stats: statsData,
+                recentUsers: recentUsers || [],
+                tasks: tasks || [],
+                logoUrl: stuLogo
+            });
+            console.log('PDF generation finished successfully');
+        } catch (err) {
+            console.error('Lỗi xuất PDF:', err);
+            alert('Có lỗi xảy ra khi tạo báo cáo PDF. Vui lòng tải lại trang và thử lại.');
+        } finally {
+            setDownloading(false);
+        }
+    };
 
     const statsConfig = [
         { label: 'Tổng nhân viên', value: statsData.totalUsers, trend: '+12%', isUp: true, colorClass: 'icon-blue-dash', icon: (props) => (
@@ -96,7 +122,13 @@ const DashboardHome = ({ user }) => {
                     </p>
                 </div>
                 <div className="wow-welcome-actions">
-                    <button className="btn-wow-secondary">Tải báo cáo</button>
+                    <button 
+                        className="btn-wow-secondary" 
+                        onClick={handleDownloadReport}
+                        disabled={downloading}
+                    >
+                        {downloading ? 'Đang tạo...' : 'Tải báo cáo'}
+                    </button>
                     <Link to="/dashboard/tasks" style={{textDecoration:'none'}}>
                         <button className="btn-wow-primary">Giao việc mới</button>
                     </Link>

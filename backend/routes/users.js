@@ -42,20 +42,33 @@ router.get('/stats', isAdmin, async (req, res) => {
     try {
         db = await getDb();
         const [nsCount] = await db.execute('SELECT COUNT(*) as count FROM NhanSu');
+        const [cvCount] = await db.execute('SELECT COUNT(*) as count FROM CongViec');
         
-        let cvCount = [{ count: 0 }];
-        try {
-            [cvCount] = await db.execute('SELECT COUNT(*) as count FROM CongViec');
-        } catch (e) {}
+        const [progressStat] = await db.execute(`
+            SELECT ROUND(AVG(latest_progress), 0) as avg_progress 
+            FROM (
+                SELECT c.MaCV, 
+                IFNULL((SELECT PhanTramHoanThanh FROM BaoCaoTienDo b WHERE b.MaCV = c.MaCV ORDER BY b.NgayGui DESC LIMIT 1), 0) as latest_progress
+                FROM CongViec c
+            ) as sub
+        `);
+
+        const [lateStat] = await db.execute(`
+            SELECT COUNT(*) as count 
+            FROM CongViec c 
+            WHERE c.NgayKetThuc < NOW() 
+            AND IFNULL((SELECT PhanTramHoanThanh FROM BaoCaoTienDo b WHERE b.MaCV = c.MaCV ORDER BY b.NgayGui DESC LIMIT 1), 0) < 100
+        `);
 
         res.json({
             totalUsers: nsCount[0].count,
             totalTasks: cvCount[0].count,
-            completedTasks: 0, 
-            lateTasks: 0,
-            percentComplete: 0
+            completedTasks: 0, // Not used by frontend yet
+            lateTasks: lateStat[0].count,
+            percentComplete: progressStat[0].avg_progress || 0
         });
     } catch (error) {
+        console.error('Stats error:', error);
         res.status(500).json({ message: 'Lỗi server khi lấy thống kê.' });
     } finally {
         if (db) await db.end();

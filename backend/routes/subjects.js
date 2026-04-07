@@ -116,6 +116,27 @@ router.delete('/assignments/:id', verifyToken, isAdmin, async (req, res) => {
     }
 });
 
+router.put('/assignments/:id', verifyToken, isAdmin, async (req, res) => {
+    let db;
+    try {
+        const idParts = req.params.id.split('_');
+        if (idParts.length !== 2) return res.status(400).json({ message: 'ID không hợp lệ.'});
+        
+        const { ngay_bat_dau, ngay_ket_thuc, ca, phong, thu } = req.body;
+        db = await getDb();
+        
+        await db.execute(
+            'UPDATE TKB SET NgayBatDau = ?, NgayKetThuc = ?, Ca = ?, Phong = ?, Thu = ? WHERE MaNS = ? AND MaMH = ?',
+            [ngay_bat_dau, ngay_ket_thuc, ca, phong, thu, idParts[0], idParts[1]]
+        );
+        res.json({ message: 'Cập nhật phân công thành công!' });
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi server.' });
+    } finally {
+        if (db) await db.end();
+    }
+});
+
 // --- MON HOC ---
 
 router.get('/', verifyToken, async (req, res) => {

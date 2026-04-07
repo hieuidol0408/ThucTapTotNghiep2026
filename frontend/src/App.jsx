@@ -5,6 +5,7 @@ import Login from './components/Login';
 import StaffManagement from './components/StaffManagement';
 import SubjectAssignment from './components/SubjectAssignment';
 import DashboardHome from './components/DashboardHome';
+import TaskAssignment from './components/TaskAssignment';
 import stuLogo from './assets/stu_logo.png';
 import './App.css';
 
@@ -90,6 +91,7 @@ const ProtectedRoute = ({ children }) => {
 const getPageTitle = (pathname) => {
     if (pathname === '/dashboard/staff') return 'Quản lý nhân sự';
     if (pathname === '/dashboard/subjects') return 'Quản lý môn học';
+    if (pathname === '/dashboard/tasks') return 'Phân công công việc';
     return 'Trang Chủ';
 };
 
@@ -108,7 +110,7 @@ const DashboardLayout = () => {
             {/* Thanh Menu bên trái - ÉP HIỂN THỊ TUYỆT ĐỐI */}
             <aside className="wow-sidebar-fixed" style={{ 
                 width: '280px', 
-                background: '#0f172a', 
+                background: '#ffffff', 
                 position: 'fixed', 
                 top: 0, 
                 left: 0, 
@@ -117,14 +119,15 @@ const DashboardLayout = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 padding: '2rem 1.5rem',
-                boxShadow: '4px 0 25px rgba(0,0,0,0.3)',
-                color: 'white',
+                boxShadow: '10px 0 30px -10px rgba(0,0,0,0.05)',
+                borderRight: '1px solid #e2e8f0',
+                color: '#0f172a',
                 visibility: 'visible',
                 opacity: 1
             }}>
                 <div className="sidebar-logo" style={{ marginBottom: '3rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <img src={stuLogo} alt="STU Logo" className="logo-img-wow" style={{ width: '45px', height: '45px', borderRadius: '12px', background: 'white', padding: '5px' }} />
-                    <span style={{ color: 'white', fontWeight: 800, fontSize: '1.4rem', letterSpacing: '1px' }}>STU WORK</span>
+                    <img src={stuLogo} alt="STU Logo" className="logo-img-wow" style={{ width: '45px', height: '45px', borderRadius: '12px', background: 'white', padding: '5px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }} />
+                    <span style={{ color: '#0f172a', fontWeight: 800, fontSize: '1.4rem', letterSpacing: '1px' }}>STU WORK</span>
                 </div>
                 
                 <nav className="sidebar-nav" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -137,9 +140,10 @@ const DashboardLayout = () => {
                         label={user.role === 'admin' ? "Quản lý môn học" : "Môn học của tôi"} 
                         path="/dashboard/subjects" 
                     />
+                    <NavItem icon={IconClipboardList} label="Phân công công việc" path="/dashboard/tasks" />
                 </nav>
 
-                <div className="sidebar-footer" style={{ marginTop: 'auto', paddingTop: '2rem', borderTop: '1px dashed rgba(255,255,255,0.2)' }}>
+                <div className="sidebar-footer" style={{ marginTop: 'auto', paddingTop: '2rem', borderTop: '1px dashed #e2e8f0' }}>
                     <button className="logout-btn" onClick={logoutUser} style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -148,16 +152,16 @@ const DashboardLayout = () => {
                         padding: '12px',
                         background: 'transparent',
                         border: 'none',
-                        color: '#94a3b8',
+                        color: '#475569',
                         fontWeight: 700,
                         cursor: 'pointer',
                         borderRadius: '10px',
                         transition: 'all 0.3s'
                     }}>
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '22px', height: '22px' }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="#ef4444" style={{ width: '22px', height: '22px' }}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
                         </svg>
-                        Đăng xuất
+                        <span style={{ color: '#ef4444' }}>Đăng xuất</span>
                     </button>
                 </div>
             </aside>
@@ -208,6 +212,7 @@ const DashboardLayout = () => {
                   <Route index element={<DashboardHome user={user} />} />
                   <Route path="staff" element={<StaffManagement />} />
                   <Route path="subjects" element={<SubjectAssignment />} />
+                  <Route path="tasks" element={<TaskAssignment />} />
                   {/* Default fallback inside dashboard */}
                   <Route path="*" element={<Navigate to="" replace />} />
                 </Routes>

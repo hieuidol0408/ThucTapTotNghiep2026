@@ -274,19 +274,20 @@
     left: 0 !important;
     bottom: 0 !important;
     width: var(--sidebar-width) !important;
-    background: #0f172a !important; /* Deep Enterprise Blue */
-    z-index: 9999 !important; /* Ensure it stays on top */
+    background: #ffffff !important; /* Pure White Sidebar */
+    z-index: 9999 !important;
     display: flex !important;
     flex-direction: column !important;
     padding: 1.5rem !important;
-    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2) !important;
+    border-right: 1px solid #e2e8f0 !important;
+    box-shadow: 10px 0 30px -10px rgba(0, 0, 0, 0.05) !important;
     visibility: visible !important;
     opacity: 1 !important;
     transform: none !important;
 }
 
 .main-content {
-    margin-left: var(--sidebar-width) !important; /* Space for fixed sidebar */
+    margin-left: var(--sidebar-width) !important;
     width: calc(100% - var(--sidebar-width)) !important;
     min-height: 100vh !important;
     display: flex !important;
@@ -305,14 +306,14 @@
     align-items: center !important;
     gap: 12px !important;
     margin-bottom: 2.5rem !important;
-    color: white !important;
+    color: #0f172a !important;
     text-decoration: none !important;
 }
 
 .sidebar .sidebar-logo span {
     font-size: 1.25rem !important;
     font-weight: 800 !important;
-    color: white !important;
+    color: #0f172a !important;
     letter-spacing: 0.05em !important;
 }
 
@@ -321,29 +322,29 @@
     align-items: center !important;
     gap: 12px !important;
     padding: 0.875rem 1rem !important;
-    color: #94a3b8 !important;
+    color: #475569 !important;
     text-decoration: none !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
     border-radius: 12px !important;
     margin-bottom: 0.5rem !important;
     transition: all 0.2s ease !important;
 }
 
 .sidebar .nav-item:hover {
-    background: rgba(255, 255, 255, 0.1) !important;
-    color: white !important;
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
 }
 
 .sidebar .nav-item.active {
-    background: #2563eb !important;
+    background: linear-gradient(135deg, #6366f1 0%, #ec4899 100%) !important;
     color: white !important;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4) !important;
+    box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.3) !important;
 }
 
 .sidebar .sidebar-footer {
     margin-top: auto !important;
     padding-top: 1.5rem !important;
-    border-top: 1px dashed rgba(255, 255, 255, 0.2) !important;
+    border-top: 1px dashed #e2e8f0 !important;
 }
 
 .sidebar .logout-btn {
@@ -354,14 +355,14 @@
     padding: 0.75rem 1rem !important;
     background: transparent !important;
     border: none !important;
-    color: #94a3b8 !important;
-    font-weight: 600 !important;
+    color: #475569 !important;
+    font-weight: 800 !important;
     cursor: pointer !important;
     border-radius: 8px !important;
 }
 
 .sidebar .logout-btn:hover {
-    color: #fca5a5 !important;
+    color: #ef4444 !important;
     background: rgba(239, 68, 68, 0.1) !important;
 }
 

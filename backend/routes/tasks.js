@@ -41,10 +41,16 @@ router.get('/', authMiddleware, async (req, res) => {
         db = await getDb();
         let query = `
             SELECT 
-                c.MaCV as id, c.MaCV as task_id, c.TenCV as title, c.MoTa as description, 'todo' as status, 
+                c.MaCV as id, c.MaCV as task_id, c.TenCV as title, c.LoaiCV as category, c.MoTa as description,
+                CASE 
+                    WHEN (SELECT PhanTramHoanThanh FROM BaoCaoTienDo WHERE MaCV = c.MaCV ORDER BY NgayGui DESC LIMIT 1) = 100 THEN 'completed'
+                    WHEN c.NgayKetThuc < NOW() THEN 'late'
+                    ELSE 'todo'
+                END as status,
                 c.NgayBatDau as start_date, c.NgayKetThuc as end_date, 
                 p.MaNS as assignee_id,
-                n.HoTen as assignee_name, n.MaNS as assignee_username
+                n.HoTen as assignee_name, n.MaNS as assignee_username,
+                IFNULL((SELECT PhanTramHoanThanh FROM BaoCaoTienDo WHERE MaCV = c.MaCV ORDER BY NgayGui DESC LIMIT 1), 0) as current_progress
             FROM CongViec c
             LEFT JOIN PhanCongCongViec p ON c.MaCV = p.MaCV
             LEFT JOIN NhanSu n ON p.MaNS = n.MaNS
@@ -59,7 +65,7 @@ router.get('/', authMiddleware, async (req, res) => {
         query += ` ORDER BY c.NgayKetThuc DESC`;
         
         const [tasks] = await db.query(query, params);
-        res.json(tasks.map(t => ({...t, category: 'Công việc khoa'}))); // Map format cũ
+        res.json(tasks);
     } catch (err) {
         console.error('Error fetching tasks:', err);
         res.status(500).json({ message: 'Lỗi máy chủ' });
@@ -73,20 +79,20 @@ router.post('/', [authMiddleware, isAdmin], async (req, res) => {
     let db;
     try {
         db = await getDb();
-        const { title, description, assignee_id, start_date, end_date } = req.body;
+        const { title, category, description, assignee_id, start_date, end_date } = req.body;
 
         if (!title || !assignee_id || !start_date || !end_date) {
             return res.status(400).json({ message: 'Vui lòng điền đầy đủ các trường bắt buộc' });
         }
 
         await db.beginTransaction();
-        const query = `INSERT INTO CongViec (TenCV, MoTa, NgayBatDau, NgayKetThuc) VALUES (?, ?, ?, ?)`;
-        const [result] = await db.execute(query, [title, description || null, start_date, end_date]);
+        const query = `INSERT INTO CongViec (TenCV, LoaiCV, MoTa, NgayBatDau, NgayKetThuc) VALUES (?, ?, ?, ?, ?)`;
+        const [result] = await db.execute(query, [title, category || 'Khoa', description || null, start_date, end_date]);
         
         const newTaskId = result.insertId;
 
-        const assignQuery = `INSERT INTO PhanCongCongViec (MaNS, MaCV, NgayPhanCong) VALUES (?, ?, ?)`;
-        await db.execute(assignQuery, [assignee_id, newTaskId, new Date()]);
+        const assignQuery = `INSERT INTO PhanCongCongViec (MaNS, MaCV, NgayPhanCong) VALUES (?, ?, CURDATE())`;
+        await db.execute(assignQuery, [assignee_id, newTaskId]);
 
         await db.commit();
 
@@ -94,7 +100,7 @@ router.post('/', [authMiddleware, isAdmin], async (req, res) => {
     } catch (err) {
         if (db) await db.rollback();
         console.error('Error creating task:', err);
-        res.status(500).json({ message: 'Lỗi máy chủ' });
+        res.status(500).json({ message: 'Lỗi máy chủ: ' + (err.message || 'Không xác định') });
     } finally {
         if (db) await db.end();
     }
@@ -111,14 +117,14 @@ router.post('/:id/reports', authMiddleware, async (req, res) => {
     try {
         db = await getDb();
         const { id } = req.params;
-        const { report_note } = req.body;
+        const { report_note, progress_percent } = req.body;
 
-        if (!report_note) {
-            return res.status(400).json({ message: 'Vui lòng cung cấp nội dung báo cáo' });
+        if (!report_note || progress_percent === undefined) {
+            return res.status(400).json({ message: 'Vui lòng cung cấp nội dung báo cáo và tiến độ' });
         }
 
-        const queryReport = `INSERT INTO BaoCaoTienDo (MaNS, MaCV, NoiDungBaoCao, NgayGui) VALUES (?, ?, ?, ?)`;
-        await db.execute(queryReport, [req.user.id, id, report_note, new Date()]);
+        const queryReport = `INSERT INTO BaoCaoTienDo (MaNS, MaCV, NoiDungBaoCao, PhanTramHoanThanh, NgayGui) VALUES (?, ?, ?, ?, ?)`;
+        await db.execute(queryReport, [req.user.id, id, report_note, progress_percent, new Date()]);
 
         res.status(201).json({ message: 'Gửi báo cáo tiến độ thành công' });
     } catch (err) {
@@ -136,7 +142,7 @@ router.get('/:id/reports', authMiddleware, async (req, res) => {
         db = await getDb();
         const { id } = req.params;
         const [reports] = await db.execute(`
-            SELECT b.MaBC as id, b.NoiDungBaoCao as report_note, b.NgayGui as created_at, 100 as progress_percent,
+            SELECT b.MaBC as id, b.NoiDungBaoCao as report_note, b.NgayGui as created_at, b.PhanTramHoanThanh as progress_percent,
                    u.HoTen as reporter_name 
             FROM BaoCaoTienDo b
             JOIN NhanSu u ON b.MaNS = u.MaNS

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { fetchTasks, createTask, deleteTask, submitTaskReport } from '../api/tasks';
+import { fetchTasks, createTask, deleteTask, submitTaskReport, fetchTaskReports } from '../api/tasks';
 import { fetchUsers } from '../api/users';
 import '../TaskAssignmentWow.css';
 
@@ -30,6 +30,9 @@ const TaskAssignment = () => {
     progress_percent: 0,
     report_note: ''
   });
+  const [historyTask, setHistoryTask] = useState(null);
+  const [reports, setReports] = useState([]);
+  const [viewingTask, setViewingTask] = useState(null);
 
   // Fetch initial data
   useEffect(() => {
@@ -122,7 +125,10 @@ const TaskAssignment = () => {
     
     try {
       setLoading(true);
-      await submitTaskReport(reportingTask.id, reportFormData);
+      await submitTaskReport(reportingTask.id, {
+        ...reportFormData,
+        progress_percent: parseInt(reportFormData.progress_percent)
+      });
       setMessage('Báo cáo tiến độ thành công!');
       setReportingTask(null);
       setReportFormData({ progress_percent: 0, report_note: '' });
@@ -132,6 +138,19 @@ const TaskAssignment = () => {
       setError('Lỗi khi gửi báo cáo');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleViewHistory = async (task) => {
+    try {
+        setLoading(true);
+        const data = await fetchTaskReports(task.id);
+        setReports(data);
+        setHistoryTask(task);
+    } catch (err) {
+        setError('Không thể tải lịch sử báo cáo');
+    } finally {
+        setLoading(false);
     }
   };
 
@@ -326,7 +345,7 @@ const TaskAssignment = () => {
                                 >
                                     <option value="">Lựa chọn người phụ trách...</option>
                                     {users.map(u => (
-                                        <option key={u.id} value={u.id}>{u.full_name} (@{u.employee_code || u.username})</option>
+                                        <option key={u.user_id} value={u.user_id}>{u.full_name} (@{u.employee_code || u.username})</option>
                                     ))}
                                 </select>
                             </div>
@@ -476,7 +495,13 @@ const TaskAssignment = () => {
                             </div>
                         </div>
 
-                        <div className="actions-cell">
+                        <div className="actions-cell" style={{gap:'8px'}}>
+                            <button className="btn-icon-wow view" onClick={() => setViewingTask(task)} title="Xem chi tiết nhiệm vụ">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                            </button>
+                            <button className="btn-icon-wow history" onClick={() => handleViewHistory(task)} title="Xem lịch sử báo cáo">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </button>
                             {currentRole === 'admin' ? (
                                 <button className="btn-icon-wow delete" onClick={() => handleDelete(task.id)} title="Gỡ bỏ nhiệm vụ">
                                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -547,6 +572,152 @@ const TaskAssignment = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* History Modal */}
+        {historyTask && (
+            <div className="wow-report-modal-overlay">
+                <div className="wow-report-modal" style={{maxWidth: '600px'}}>
+                    <div className="wow-modal-header">
+                        <h4>Lịch sử báo cáo</h4>
+                        <button onClick={() => setHistoryTask(null)}>✕</button>
+                    </div>
+                    <div className="wow-modal-body">
+                        <p className="mb-6" style={{color: '#64748b', fontSize: '0.95rem'}}>Nhiệm vụ: <strong style={{color: '#1e293b'}}>{historyTask.title}</strong></p>
+                        
+                        {reports.length === 0 ? (
+                            <div style={{textAlign: 'center', padding: '3rem 0'}}>
+                                <span style={{fontSize: '3rem', display: 'block', marginBottom: '1rem'}}>∅</span>
+                                <p style={{color: '#94a3b8', fontWeight: 600}}>Chưa có lịch sử báo cáo cho công việc này</p>
+                            </div>
+                        ) : (
+                            <div className="wow-history-timeline">
+                                {reports.map(rep => (
+                                    <div key={rep.id} className="wow-history-item">
+                                        <span className="wow-history-date">{new Date(rep.created_at).toLocaleString('vi-VN')}</span>
+                                        <div className="wow-history-content">
+                                            <div className="wow-history-header">
+                                                <span className="wow-history-reporter">👤 {rep.reporter_name}</span>
+                                                <span className="wow-history-perc">{rep.progress_percent}%</span>
+                                            </div>
+                                            <p className="wow-history-note">{rep.report_note}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        
+                        <div className="mt-8">
+                            <button className="btn-wow-secondary w-full" onClick={() => setHistoryTask(null)}>Đóng cửa sổ</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* Task Detail Modal - Premium UI Overhaul */}
+        {viewingTask && (
+            <div className="wow-report-modal-overlay" onClick={() => setViewingTask(null)} style={{padding: '20px'}}>
+                <div className="wow-report-modal" style={{maxWidth: '850px', borderRadius: '40px', background: 'rgba(255, 255, 255, 0.95)', border: '1px solid rgba(255, 255, 255, 1)'}} onClick={e => e.stopPropagation()}>
+                    <div className="wow-modal-header">
+                        <div style={{display:'flex', flexDirection:'column', gap: '4px'}}>
+                            <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+                                <span style={{background: 'rgba(255, 255, 255, 0.2)', padding: '4px 12px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px'}}>Nhiệm vụ hệ thống</span>
+                                <span style={{fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.7)', fontWeight: 700}}>#{viewingTask.task_id}</span>
+                            </div>
+                            <h4 style={{color:'white', fontSize: '1.85rem', fontWeight: 900, marginBottom: 0, letterSpacing: '-0.5px'}}>{viewingTask.title}</h4>
+                        </div>
+                        <button onClick={() => setViewingTask(null)}>
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+
+                    <div className="wow-modal-body" style={{padding: '3.5rem'}}>
+                        <div className="wow-detail-layout-container">
+                            {/* Main Content Column */}
+                            <div className="wow-detail-main-content">
+                                <div style={{display: 'flex', gap: '12px'}}>
+                                    <span style={{background:'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)', color:'white', padding:'8px 20px', borderRadius:'14px', fontSize:'0.9rem', fontWeight:800, boxShadow: '0 4px 15px rgba(79, 70, 229, 0.3)'}}>
+                                        📌 {viewingTask.category}
+                                    </span>
+                                    <div className={`badge-wow-visual ${getStatusWowClass(viewingTask.status)}`} style={{width:'auto', padding:'8px 20px', borderRadius: '14px', fontSize: '0.9rem'}}>
+                                        <StatusIcon status={viewingTask.status} />
+                                        <span style={{marginLeft: '8px'}}>{viewingTask.status === 'todo' ? 'Đang chờ' : viewingTask.status === 'completed' ? 'Hoàn tất' : 'Trễ hạn'}</span>
+                                    </div>
+                                </div>
+
+                                <div className="wow-detail-section">
+                                    <h5>Mô tả chi tiết & Yêu cầu</h5>
+                                    <div className="wow-detail-description">
+                                        {viewingTask.description || "Không có ghi chú mô tả cụ thể cho nhiệm vụ này."}
+                                    </div>
+                                </div>
+
+                                <div style={{display:'flex', gap:'20px', marginTop:'auto'}}>
+                                    <button className="btn-wow-secondary" onClick={() => setViewingTask(null)} style={{padding:'1.25rem 2.5rem', borderRadius: '20px', fontSize: '1rem', flex: 1}}>Quay lại danh sách</button>
+                                    <button className="btn-wow" onClick={() => { setViewingTask(null); handleViewHistory(viewingTask); }} style={{padding:'1.25rem 2.5rem', borderRadius: '20px', fontSize: '1rem', background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', flex: 2}}>Xem lịch sử báo cáo 📜</button>
+                                </div>
+                            </div>
+
+                            {/* Sidebar Column */}
+                            <div className="wow-detail-sidebar">
+                                <div className="wow-detail-section">
+                                    <h5>Thông tin phụ trách</h5>
+                                    <div style={{display:'flex', flexDirection:'column', gap: '1rem'}}>
+                                        <div className="wow-detail-card" style={{padding: '1.25rem'}}>
+                                            <div className="wow-detail-card-icon" style={{background:'#eef2ff', color:'#4f46e5'}}>👤</div>
+                                            <div className="wow-detail-card-content">
+                                                <span className="wow-detail-card-label">Người phụ trách</span>
+                                                <span className="wow-detail-card-value" style={{fontSize: '1.1rem'}}>{viewingTask.assignee_name}</span>
+                                            </div>
+                                        </div>
+                                        <div className="wow-detail-card" style={{padding: '1.25rem'}}>
+                                            <div className="wow-detail-card-icon" style={{background:'#fcfaf2', color:'#d97706'}}>🆔</div>
+                                            <div className="wow-detail-card-content">
+                                                <span className="wow-detail-card-label">Mã số nhân viên</span>
+                                                <span className="wow-detail-card-value" style={{fontFamily: 'monospace', color: '#475569', fontSize: '0.95rem'}}>@{viewingTask.assignee_username}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="wow-detail-section">
+                                    <h5>Thời hạn thực hiện</h5>
+                                    <div style={{display:'flex', flexDirection:'column', gap: '1rem'}}>
+                                        <div className="wow-detail-card" style={{padding: '1.25rem'}}>
+                                            <div className="wow-detail-card-icon" style={{background:'#f0fdf4', color:'#16a34a'}}>📅</div>
+                                            <div className="wow-detail-card-content">
+                                                <span className="wow-detail-card-label">Ngày khởi tạo</span>
+                                                <span className="wow-detail-card-value" style={{fontSize: '1rem'}}>{formatDateString(viewingTask.start_date)}</span>
+                                            </div>
+                                        </div>
+                                        <div className="wow-detail-card" style={{padding: '1.25rem'}}>
+                                            <div className="wow-detail-card-icon" style={{background:'#fef2f2', color:'#dc2626'}}>🚨</div>
+                                            <div className="wow-detail-card-content">
+                                                <span className="wow-detail-card-label">Hạn hoàn thành</span>
+                                                <span className="wow-detail-card-value" style={{color: '#dc2626', fontSize: '1rem'}}>{formatDateString(viewingTask.end_date)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="wow-detail-progress-section" style={{padding: '2.25rem'}}>
+                                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1rem'}}>
+                                        <h5 style={{color:'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '2px', fontSize: '0.65rem', border: 'none'}}>Tiến độ</h5>
+                                        <span style={{fontSize:'2rem', fontWeight:900, color:'white'}}>{viewingTask.current_progress}%</span>
+                                    </div>
+                                    <div className="wow-detail-timeline" style={{height: '10px', margin: '1rem 0'}}>
+                                        <div className="wow-detail-timeline-bar" style={{width: `${viewingTask.current_progress}%`}}></div>
+                                    </div>
+                                    <p style={{margin:0, fontSize:'0.8rem', color:'rgba(255,255,255,0.6)', textAlign:'center', fontStyle: 'italic'}}>
+                                        {viewingTask.current_progress === 100 ? "Mục tiêu đã đạt ✅" : "Nhiệm vụ đang xử lý 🚀"}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

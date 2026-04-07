@@ -31,6 +31,12 @@ export const deleteAssignment = async (id) => {
     return response.data;
 };
 
+// Cập nhật phân công
+export const updateAssignment = async (id, data) => {
+    const response = await axios.put(`${API_URL}/assignments/${id}`, data, { headers: getAuthHeader() });
+    return response.data;
+};
+
 // --- QUẢN LÝ DANH MỤC MÔN HỌC ---
 
 // Thêm môn học mới

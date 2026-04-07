@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { fetchSubjects, fetchAssignments, createAssignment, deleteAssignment, createSubject, updateSubject, deleteSubject } from '../api/subjects';
+import { fetchSubjects, fetchAssignments, createAssignment, updateAssignment, deleteAssignment, createSubject, updateSubject, deleteSubject } from '../api/subjects';
 import { fetchUsers } from '../api/users';
 import { AuthContext } from '../context/AuthContext';
 import '../SubjectAssignmentWow.css';
@@ -19,6 +19,7 @@ const SubjectAssignment = () => {
 
     // Form State (Assignment)
     const [assignForm, setAssignForm] = useState({
+        id: null,
         user_id: '',
         subject_id: '',
         ngay_bat_dau: '',
@@ -76,10 +77,24 @@ const SubjectAssignment = () => {
     const handleAssignSubmit = async (e) => {
         e.preventDefault();
         try {
-            await createAssignment(assignForm);
-            setMessage('🎯 Đã phân công môn học thành công!');
-            loadData(); // Tải lại dữ liệu sau khi thêm mới
-            setAssignForm({ ...assignForm, subject_id: '' });
+            if (assignForm.id) {
+                await updateAssignment(assignForm.id, assignForm);
+                setMessage('📝 Đã cập nhật phân công giảng dạy!');
+            } else {
+                await createAssignment(assignForm);
+                setMessage('🎯 Đã phân công môn học thành công!');
+            }
+            loadData();
+            setAssignForm({
+                id: null,
+                user_id: '',
+                subject_id: '',
+                ngay_bat_dau: '',
+                ngay_ket_thuc: '',
+                ca: 1,
+                phong: '',
+                thu: 2
+            });
             setTimeout(() => setMessage(''), 4000);
         } catch (err) {
             setError(err.response?.data?.message || 'Lỗi khi phân công.');
@@ -99,6 +114,20 @@ const SubjectAssignment = () => {
             setError('Lỗi khi xóa phân công.');
             setTimeout(() => setError(''), 4000);
         }
+    };
+
+    const handleEditAssignment = (a) => {
+        setAssignForm({
+            id: a.id,
+            user_id: a.user_id,
+            subject_id: a.subject_id,
+            ngay_bat_dau: a.NgayBatDau ? new Date(a.NgayBatDau).toISOString().split('T')[0] : '',
+            ngay_ket_thuc: a.NgayKetThuc ? new Date(a.NgayKetThuc).toISOString().split('T')[0] : '',
+            ca: a.Ca,
+            phong: a.Phong,
+            thu: a.Thu
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     // --- HANDLERS FOR SUBJECT MANAGEMENT ---
@@ -184,8 +213,8 @@ const SubjectAssignment = () => {
                             <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                         </div>
                         <div className="wow-form-title">
-                            <h4>Giao việc Giảng dạy</h4>
-                            <p>Chọn giảng viên và vai trò tương ứng cho môn học.</p>
+                            <h4>{assignForm.id ? "Hiệu chỉnh Phân công" : "Giao việc Giảng dạy"}</h4>
+                            <p>{assignForm.id ? "Cập nhật lại thời gian và địa điểm giảng dạy." : "Chọn giảng viên và vai trò tương ứng cho môn học."}</p>
                         </div>
                     </div>
 
@@ -200,7 +229,9 @@ const SubjectAssignment = () => {
                                 >
                                     <option value="">-- Chọn giảng viên --</option>
                                     {lecturers.map(l => (
-                                        <option key={l.user_id} value={l.user_id}>{l.full_name} ({l.employee_code})</option>
+                                        <option key={l.user_id} value={l.user_id} disabled={assignForm.id && assignForm.user_id !== l.user_id}>
+                                            {l.full_name} ({l.employee_code})
+                                        </option>
                                     ))}
                                 </select>
                             </div>
@@ -216,7 +247,9 @@ const SubjectAssignment = () => {
                                 >
                                     <option value="">-- Chọn môn học --</option>
                                     {subjects.map(s => (
-                                        <option key={s.id} value={s.id}>{s.subject_name} ({s.subject_code})</option>
+                                        <option key={s.id} value={s.id} disabled={assignForm.id && assignForm.subject_id !== s.id}>
+                                            {s.subject_name} ({s.subject_code})
+                                        </option>
                                     ))}
                                 </select>
                             </div>
@@ -285,9 +318,14 @@ const SubjectAssignment = () => {
                             </div>
                         </div>
 
-                        <div className="wow-form-actions" style={{ gridColumn: 'span 2', textAlign: 'right', marginTop: '1rem' }}>
+                        <div className="wow-form-actions" style={{ gridColumn: 'span 2', display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                            {assignForm.id && (
+                                <button type="button" className="btn-wow btn-wow-cancel" onClick={() => setAssignForm({id:null, user_id:'', subject_id:'', ngay_bat_dau:'', ngay_ket_thuc:'', ca:1, phong:'', thu:2})}>
+                                    Hủy
+                                </button>
+                            )}
                             <button type="submit" className="btn-wow">
-                                <span>Phân công ngay</span>
+                                <span>{assignForm.id ? "Lưu thay đổi" : "Phân công ngay"}</span>
                                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4"></path></svg>
                             </button>
                         </div>
@@ -387,6 +425,9 @@ const SubjectAssignment = () => {
                                 </div>
                                 {isAdmin && (
                                     <div className="wow-list-actions">
+                                        <button className="btn-icon-wow edit-blue" onClick={() => handleEditAssignment(a)} title="Sửa phân công" style={{ marginRight: '0.5rem' }}>
+                                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                        </button>
                                         <button className="btn-icon-wow-rect" onClick={() => handleDeleteAssignment(a.id)} title="Xóa phân công">
                                             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                         </button>
