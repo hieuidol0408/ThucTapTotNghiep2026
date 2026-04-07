@@ -618,103 +618,84 @@ const TaskAssignment = () => {
             </div>
         )}
 
-        {/* Task Detail Modal - Premium UI Overhaul */}
+        {/* Task Detail Modal - Ultra Compact Version */}
         {viewingTask && (
-            <div className="wow-report-modal-overlay" onClick={() => setViewingTask(null)} style={{padding: '20px'}}>
-                <div className="wow-report-modal" style={{maxWidth: '850px', borderRadius: '40px', background: 'rgba(255, 255, 255, 0.95)', border: '1px solid rgba(255, 255, 255, 1)'}} onClick={e => e.stopPropagation()}>
-                    <div className="wow-modal-header">
-                        <div style={{display:'flex', flexDirection:'column', gap: '4px'}}>
-                            <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
-                                <span style={{background: 'rgba(255, 255, 255, 0.2)', padding: '4px 12px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px'}}>Nhiệm vụ hệ thống</span>
-                                <span style={{fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.7)', fontWeight: 700}}>#{viewingTask.task_id}</span>
+            <div className="wow-report-modal-overlay" onClick={() => setViewingTask(null)} style={{padding: 0}}>
+                <div className="wow-report-modal wow-detail-modal-premium" onClick={e => e.stopPropagation()}>
+                    <div className="wow-modal-header" style={{flexShrink: 0}}>
+                        <div style={{display:'flex', flexDirection:'column', gap: '2px'}}>
+                            <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
+                                <span style={{background: 'rgba(255, 255, 255, 0.2)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase'}}>Task System</span>
+                                <span style={{fontSize: '0.65rem', color: 'rgba(255, 255, 255, 0.7)', fontWeight: 700}}>#{viewingTask.task_id}</span>
                             </div>
-                            <h4 style={{color:'white', fontSize: '1.85rem', fontWeight: 900, marginBottom: 0, letterSpacing: '-0.5px'}}>{viewingTask.title}</h4>
+                            <h4 style={{color:'white', fontSize: '1.4rem', fontWeight: 900, margin: 0, letterSpacing: '-0.3px'}}>{viewingTask.title}</h4>
                         </div>
-                        <button onClick={() => setViewingTask(null)}>
-                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        <button onClick={() => setViewingTask(null)} style={{width: '36px', height: '36px', fontSize: '1rem'}}>
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
                     </div>
 
-                    <div className="wow-modal-body" style={{padding: '3.5rem'}}>
+                    <div className="wow-modal-body" style={{padding: '1.5rem 2rem', overflowY: 'auto', flex: 1}}>
                         <div className="wow-detail-layout-container">
-                            {/* Main Content Column */}
+                            {/* Main Column */}
                             <div className="wow-detail-main-content">
-                                <div style={{display: 'flex', gap: '12px'}}>
-                                    <span style={{background:'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)', color:'white', padding:'8px 20px', borderRadius:'14px', fontSize:'0.9rem', fontWeight:800, boxShadow: '0 4px 15px rgba(79, 70, 229, 0.3)'}}>
+                                <div style={{display: 'flex', gap: '8px'}}>
+                                    <span style={{background:'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)', color:'white', padding:'6px 14px', borderRadius:'10px', fontSize:'0.8rem', fontWeight:800}}>
                                         📌 {viewingTask.category}
                                     </span>
-                                    <div className={`badge-wow-visual ${getStatusWowClass(viewingTask.status)}`} style={{width:'auto', padding:'8px 20px', borderRadius: '14px', fontSize: '0.9rem'}}>
+                                    <div className={`badge-wow-visual ${getStatusWowClass(viewingTask.status)}`} style={{width:'auto', padding:'6px 14px', borderRadius: '10px', fontSize: '0.8rem'}}>
                                         <StatusIcon status={viewingTask.status} />
-                                        <span style={{marginLeft: '8px'}}>{viewingTask.status === 'todo' ? 'Đang chờ' : viewingTask.status === 'completed' ? 'Hoàn tất' : 'Trễ hạn'}</span>
+                                        <span style={{marginLeft: '6px'}}>{viewingTask.status === 'todo' ? 'Đang chờ' : viewingTask.status === 'completed' ? 'Hoàn tất' : 'Trễ hạn'}</span>
                                     </div>
                                 </div>
 
                                 <div className="wow-detail-section">
-                                    <h5>Mô tả chi tiết & Yêu cầu</h5>
-                                    <div className="wow-detail-description">
+                                    <h5 style={{fontSize: '0.75rem'}}>Yêu cầu công việc</h5>
+                                    <div className="wow-detail-description" style={{padding: '1.25rem', borderRadius: '16px'}}>
                                         {viewingTask.description || "Không có ghi chú mô tả cụ thể cho nhiệm vụ này."}
                                     </div>
                                 </div>
 
-                                <div style={{display:'flex', gap:'20px', marginTop:'auto'}}>
-                                    <button className="btn-wow-secondary" onClick={() => setViewingTask(null)} style={{padding:'1.25rem 2.5rem', borderRadius: '20px', fontSize: '1rem', flex: 1}}>Quay lại danh sách</button>
-                                    <button className="btn-wow" onClick={() => { setViewingTask(null); handleViewHistory(viewingTask); }} style={{padding:'1.25rem 2.5rem', borderRadius: '20px', fontSize: '1rem', background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', flex: 2}}>Xem lịch sử báo cáo 📜</button>
+                                <div style={{display:'flex', gap:'12px', marginTop:'auto'}}>
+                                    <button className="btn-wow-secondary" onClick={() => setViewingTask(null)} style={{padding:'0.8rem 1.5rem', borderRadius: '12px', fontSize: '0.9rem', flex: 1}}>Quay lại</button>
+                                    <button className="btn-wow" onClick={() => { setViewingTask(null); handleViewHistory(viewingTask); }} style={{padding:'0.8rem 1.5rem', borderRadius: '12px', fontSize: '0.9rem', background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', flex: 2}}>Lịch sử báo cáo 📜</button>
                                 </div>
                             </div>
 
                             {/* Sidebar Column */}
                             <div className="wow-detail-sidebar">
                                 <div className="wow-detail-section">
-                                    <h5>Thông tin phụ trách</h5>
-                                    <div style={{display:'flex', flexDirection:'column', gap: '1rem'}}>
-                                        <div className="wow-detail-card" style={{padding: '1.25rem'}}>
-                                            <div className="wow-detail-card-icon" style={{background:'#eef2ff', color:'#4f46e5'}}>👤</div>
-                                            <div className="wow-detail-card-content">
-                                                <span className="wow-detail-card-label">Người phụ trách</span>
-                                                <span className="wow-detail-card-value" style={{fontSize: '1.1rem'}}>{viewingTask.assignee_name}</span>
-                                            </div>
-                                        </div>
-                                        <div className="wow-detail-card" style={{padding: '1.25rem'}}>
-                                            <div className="wow-detail-card-icon" style={{background:'#fcfaf2', color:'#d97706'}}>🆔</div>
-                                            <div className="wow-detail-card-content">
-                                                <span className="wow-detail-card-label">Mã số nhân viên</span>
-                                                <span className="wow-detail-card-value" style={{fontFamily: 'monospace', color: '#475569', fontSize: '0.95rem'}}>@{viewingTask.assignee_username}</span>
-                                            </div>
+                                    <h5 style={{fontSize: '0.75rem'}}>Phụ trách</h5>
+                                    <div className="wow-detail-card" style={{padding: '1rem', borderRadius: '16px'}}>
+                                        <div className="wow-detail-card-icon" style={{width:'36px', height:'36px', fontSize:'1.2rem'}}>👤</div>
+                                        <div className="wow-detail-card-content">
+                                            <span className="wow-detail-card-label" style={{fontSize: '0.7rem'}}>Họ tên</span>
+                                            <span className="wow-detail-card-value" style={{fontSize: '0.95rem'}}>{viewingTask.assignee_name}</span>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="wow-detail-section">
-                                    <h5>Thời hạn thực hiện</h5>
-                                    <div style={{display:'flex', flexDirection:'column', gap: '1rem'}}>
-                                        <div className="wow-detail-card" style={{padding: '1.25rem'}}>
-                                            <div className="wow-detail-card-icon" style={{background:'#f0fdf4', color:'#16a34a'}}>📅</div>
+                                    <h5 style={{fontSize: '0.75rem'}}>Thời gian</h5>
+                                    <div style={{display:'flex', flexDirection:'column', gap: '0.75rem'}}>
+                                        <div className="wow-detail-card" style={{padding: '0.85rem', borderRadius: '16px'}}>
+                                            <div className="wow-detail-card-icon" style={{width:'32px', height:'32px', fontSize:'1rem'}}>📅</div>
                                             <div className="wow-detail-card-content">
-                                                <span className="wow-detail-card-label">Ngày khởi tạo</span>
-                                                <span className="wow-detail-card-value" style={{fontSize: '1rem'}}>{formatDateString(viewingTask.start_date)}</span>
-                                            </div>
-                                        </div>
-                                        <div className="wow-detail-card" style={{padding: '1.25rem'}}>
-                                            <div className="wow-detail-card-icon" style={{background:'#fef2f2', color:'#dc2626'}}>🚨</div>
-                                            <div className="wow-detail-card-content">
-                                                <span className="wow-detail-card-label">Hạn hoàn thành</span>
-                                                <span className="wow-detail-card-value" style={{color: '#dc2626', fontSize: '1rem'}}>{formatDateString(viewingTask.end_date)}</span>
+                                                <span className="wow-detail-card-label" style={{fontSize: '0.65rem'}}>Hạn chót</span>
+                                                <span className="wow-detail-card-value" style={{color: '#dc2626', fontSize: '0.9rem'}}>{formatDateString(viewingTask.end_date)}</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="wow-detail-progress-section" style={{padding: '2.25rem'}}>
-                                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1rem'}}>
-                                        <h5 style={{color:'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '2px', fontSize: '0.65rem', border: 'none'}}>Tiến độ</h5>
-                                        <span style={{fontSize:'2rem', fontWeight:900, color:'white'}}>{viewingTask.current_progress}%</span>
+                                <div className="wow-detail-progress-section" style={{padding: '1.5rem', borderRadius: '24px'}}>
+                                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.75rem'}}>
+                                        <h5 style={{color:'rgba(255,255,255,0.6)', border: 'none', fontSize: '0.6rem'}}>Tiến độ</h5>
+                                        <span style={{fontSize:'1.8rem', fontWeight:900, color:'white'}}>{viewingTask.current_progress}%</span>
                                     </div>
-                                    <div className="wow-detail-timeline" style={{height: '10px', margin: '1rem 0'}}>
+                                    <div className="wow-detail-timeline" style={{height: '8px', margin: '0.75rem 0'}}>
                                         <div className="wow-detail-timeline-bar" style={{width: `${viewingTask.current_progress}%`}}></div>
                                     </div>
-                                    <p style={{margin:0, fontSize:'0.8rem', color:'rgba(255,255,255,0.6)', textAlign:'center', fontStyle: 'italic'}}>
-                                        {viewingTask.current_progress === 100 ? "Mục tiêu đã đạt ✅" : "Nhiệm vụ đang xử lý 🚀"}
-                                    </p>
                                 </div>
                             </div>
                         </div>
