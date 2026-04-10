@@ -20,6 +20,35 @@ const StaffManagement = () => {
         role: 'staff',
         status: 'active'
     });
+    const [formErrors, setFormErrors] = useState({});
+
+    // Validation rules
+    const validateForm = (data, isEdit) => {
+        const errors = {};
+        // 1. Mã nhân viên: chỉ chứa chữ cái, số, dấu gạch dưới
+        if (!isEdit) {
+            if (!data.employee_code.trim()) {
+                errors.employee_code = 'Vui lòng nhập mã nhân viên.';
+            } else if (/[^a-zA-Z0-9_]/.test(data.employee_code)) {
+                errors.employee_code = 'Mã nhân viên không được chứa ký tự đặc biệt.';
+            }
+        }
+        // 2. Họ tên: tối thiểu 6 ký tự
+        if (!data.full_name.trim()) {
+            errors.full_name = 'Vui lòng nhập họ và tên.';
+        } else if (data.full_name.trim().length < 6) {
+            errors.full_name = 'Họ và tên phải có ít nhất 6 ký tự.';
+        }
+        // 3. Mật khẩu: tối thiểu 6 ký tự (bắt buộc khi thêm mới, tùy chọn khi sửa)
+        if (!isEdit || data.password) {
+            if (!data.password) {
+                errors.password = 'Vui lòng nhập mật khẩu.';
+            } else if (data.password.length < 6) {
+                errors.password = 'Mật khẩu phải có ít nhất 6 ký tự.';
+            }
+        }
+        return errors;
+    };
 
     const [selectedUser, setSelectedUser] = useState(null);
     const [showDetail, setShowDetail] = useState(false);
@@ -61,6 +90,13 @@ const StaffManagement = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        // Validate trước khi gửi
+        const errors = validateForm(formData, !!editId);
+        if (Object.keys(errors).length > 0) {
+            setFormErrors(errors);
+            return;
+        }
+        setFormErrors({});
         try {
             if (editId) {
                 await updateUser(editId, formData);
@@ -190,17 +226,20 @@ const StaffManagement = () => {
                         <div className="wow-form-grid">
                             <div className="wow-input-group">
                                 <label>Mã nhân viên (Định danh)</label>
-                                <div className="wow-input-field-wrapper">
+                                <div className="wow-input-field-wrapper" style={formErrors.employee_code ? {border:'1.5px solid #ef4444', borderRadius:'14px'} : {}}>
                                     <svg className="wow-field-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                     <input 
                                         type="text" 
                                         value={formData.employee_code}
-                                        onChange={(e) => setFormData({...formData, employee_code: e.target.value})}
+                                        onChange={(e) => {
+                                            setFormData({...formData, employee_code: e.target.value});
+                                            if (formErrors.employee_code) setFormErrors({...formErrors, employee_code: ''});
+                                        }}
                                         disabled={!!editId}
-                                        placeholder="Mã NV..."
-                                        required
+                                        placeholder="Chỉ dùng chữ, số, dấu _"
                                     />
                                 </div>
+                                {formErrors.employee_code && <span style={{color:'#ef4444', fontSize:'0.82rem', marginTop:'0.35rem', display:'block', fontWeight:'600'}}>⚠️ {formErrors.employee_code}</span>}
                             </div>
                             <div className="wow-input-group">
                                 <label>Email thư điện tử</label>
@@ -216,30 +255,36 @@ const StaffManagement = () => {
                                 </div>
                             </div>
                             <div className="wow-input-group">
-                                <label>Họ và tên</label>
-                                <div className="wow-input-field-wrapper">
+                                <label>Họ và tên <span style={{color:'#94a3b8', fontWeight:'500', fontSize:'0.82rem'}}>(tối thiểu 6 ký tự)</span></label>
+                                <div className="wow-input-field-wrapper" style={formErrors.full_name ? {border:'1.5px solid #ef4444', borderRadius:'14px'} : {}}>
                                     <svg className="wow-field-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                     <input 
                                         type="text" 
                                         value={formData.full_name}
-                                        onChange={(e) => setFormData({...formData, full_name: e.target.value})}
-                                        placeholder="Tên nhân sự..."
-                                        required
+                                        onChange={(e) => {
+                                            setFormData({...formData, full_name: e.target.value});
+                                            if (formErrors.full_name) setFormErrors({...formErrors, full_name: ''});
+                                        }}
+                                        placeholder="Họ và tên (ít nhất 6 ký tự)..."
                                     />
                                 </div>
+                                {formErrors.full_name && <span style={{color:'#ef4444', fontSize:'0.82rem', marginTop:'0.35rem', display:'block', fontWeight:'600'}}>⚠️ {formErrors.full_name}</span>}
                             </div>
                             <div className="wow-input-group">
-                                <label>Mật khẩu {editId && <span className="opacity-50 text-sm font-medium ml-1">(Bỏ trống nếu không đổi)</span>}</label>
-                                <div className="wow-input-field-wrapper">
+                                <label>Mật khẩu {editId ? <span style={{opacity:0.5, fontSize:'0.82rem', fontWeight:'500', marginLeft:'4px'}}>(Bỏ trống nếu không đổi)</span> : <span style={{color:'#94a3b8', fontWeight:'500', fontSize:'0.82rem'}}>(tối thiểu 6 ký tự)</span>}</label>
+                                <div className="wow-input-field-wrapper" style={formErrors.password ? {border:'1.5px solid #ef4444', borderRadius:'14px'} : {}}>
                                     <svg className="wow-field-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                                     <input 
                                         type="password" 
                                         value={formData.password}
-                                        onChange={(e) => setFormData({...formData, password: e.target.value})}
-                                        placeholder="Mật khẩu bảo mật..."
-                                        required={!editId}
+                                        onChange={(e) => {
+                                            setFormData({...formData, password: e.target.value});
+                                            if (formErrors.password) setFormErrors({...formErrors, password: ''});
+                                        }}
+                                        placeholder="Ít nhất 6 ký tự..."
                                     />
                                 </div>
+                                {formErrors.password && <span style={{color:'#ef4444', fontSize:'0.82rem', marginTop:'0.35rem', display:'block', fontWeight:'600'}}>⚠️ {formErrors.password}</span>}
                             </div>
                             <div className="wow-input-group">
                                 <label>Vai trò truy cập</label>

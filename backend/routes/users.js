@@ -116,6 +116,20 @@ router.post('/', isAdmin, async (req, res) => {
             return res.status(400).json({ message: 'Vui lòng điền đầy đủ thông tin.' });
         }
 
+        // --- Ràng buộc dữ liệu ---
+        // 1. Mã nhân viên không chứa ký tự đặc biệt
+        if (/[^a-zA-Z0-9_]/.test(MaNS)) {
+            return res.status(400).json({ message: 'Mã nhân viên không được chứa ký tự đặc biệt.' });
+        }
+        // 2. Họ tên tối thiểu 6 ký tự
+        if (HoTen.trim().length < 6) {
+            return res.status(400).json({ message: 'Họ và tên phải có ít nhất 6 ký tự.' });
+        }
+        // 3. Mật khẩu tối thiểu 6 ký tự
+        if (MatKhau.length < 6) {
+            return res.status(400).json({ message: 'Mật khẩu phải có ít nhất 6 ký tự.' });
+        }
+
         db = await getDb();
 
         const [existing] = await db.execute('SELECT MaNS FROM NhanSu WHERE MaNS = ? OR Email = ?', [MaNS, Email]);
@@ -147,6 +161,16 @@ router.put('/:id', isAdmin, async (req, res) => {
     try {
         const { id } = req.params; // MaNS
         const { full_name, role, email, password } = req.body;
+
+        // --- Ràng buộc dữ liệu khi cập nhật ---
+        // 1. Họ tên tối thiểu 6 ký tự
+        if (!full_name || full_name.trim().length < 6) {
+            return res.status(400).json({ message: 'Họ và tên phải có ít nhất 6 ký tự.' });
+        }
+        // 2. Nếu có nhập mật khẩu mới, kiểm tra độ dài
+        if (password && password.length < 6) {
+            return res.status(400).json({ message: 'Mật khẩu phải có ít nhất 6 ký tự.' });
+        }
         
         db = await getDb();
 
