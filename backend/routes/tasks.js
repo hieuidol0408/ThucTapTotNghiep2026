@@ -23,6 +23,16 @@ const isAdmin = (req, res, next) => {
     }
 };
 
+const escapeHtml = (text) => {
+    if (!text || typeof text !== 'string') return text;
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+};
+
 const getDb = async () => {
     return await mysql.createConnection({
         host: process.env.DB_HOST,
@@ -79,15 +89,31 @@ router.post('/', [authMiddleware, isAdmin], async (req, res) => {
     let db;
     try {
         db = await getDb();
-        const { title, category, description, assignee_id, start_date, end_date } = req.body;
+        let { title, category, description, assignee_id, start_date, end_date } = req.body;
 
-        if (!title || !assignee_id || !start_date || !end_date) {
-            return res.status(400).json({ message: 'Vui lòng điền đầy đủ các trường bắt buộc' });
+        if (!title || !title.trim()) {
+            return res.status(400).json({ message: 'Tên nhiệm vụ không được để trống hoặc chỉ chứa khoảng trắng' });
+        }
+        title = escapeHtml(title.trim());
+        const escapedDescription = escapeHtml(description);
+
+        if (!assignee_id || !start_date || !end_date) {
+            return res.status(400).json({ message: 'Vui lòng điền đầy đủ các thông tin bắt buộc' });
+        }
+
+        if (!category) {
+            return res.status(400).json({ message: 'Vui lòng chọn chuyên môn giảng dạy' });
+        }
+
+        const start = new Date(start_date);
+        const end = new Date(end_date);
+        if (end < start) {
+            return res.status(400).json({ message: 'Ngày kết thúc không thể trước ngày bắt đầu' });
         }
 
         await db.beginTransaction();
         const query = `INSERT INTO CongViec (TenCV, LoaiCV, MoTa, NgayBatDau, NgayKetThuc) VALUES (?, ?, ?, ?, ?)`;
-        const [result] = await db.execute(query, [title, category || 'Khoa', description || null, start_date, end_date]);
+        const [result] = await db.execute(query, [title, category, escapedDescription || null, start_date, end_date]);
         
         const newTaskId = result.insertId;
 

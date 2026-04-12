@@ -28,7 +28,14 @@ app.use('/api/users', userRoutes); // Tuyến đường quản lý nhân sự
 app.use('/api/subjects', subjectRoutes); // Tuyến đường quản lý môn học & phân công
 app.use('/api/tasks', taskRoutes); // Tuyến đường quản lý công việc (Bạn của user mần)
 
-// Serving Frontend Static Files
+// Serving Static Files
+const uploadsPath = path.join(__dirname, 'uploads');
+const fs = require('fs');
+if (!fs.existsSync(uploadsPath)) {
+    fs.mkdirSync(uploadsPath);
+}
+app.use('/uploads', express.static(uploadsPath));
+
 const frontendPath = path.join(__dirname, '..', 'frontend', 'dist');
 app.use(express.static(frontendPath));
 

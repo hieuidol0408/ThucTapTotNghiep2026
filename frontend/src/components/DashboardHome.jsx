@@ -115,7 +115,7 @@ const DashboardHome = ({ user }) => {
             {/* Premium Welcome Banner */}
             <header className="wow-welcome-banner">
                 <div className="wow-welcome-left">
-                    <h1>Chào mừng, <span>{user.full_name}</span> ✨</h1>
+                    <h1>Chào mừng, <span>{user.full_name.split(' ').pop()}</span> ✨</h1>
                     <p>
                         Hôm nay là {now.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                         <span className="wow-live-clock">{now.toLocaleTimeString('vi-VN')}</span>
@@ -199,7 +199,9 @@ const DashboardHome = ({ user }) => {
                                     <span className="wow-mini-name">{u.full_name}</span>
                                     <span className="wow-mini-role">{u.role === 'admin' ? 'Quản trị' : 'Nhân viên'}</span>
                                 </div>
-                                <span className="wow-mini-date">{new Date(u.created_at).toLocaleDateString('vi-VN')}</span>
+                                <span className="wow-mini-date">
+                                    {u.created_at ? new Date(u.created_at).toLocaleDateString('vi-VN') : 'Vừa xong'}
+                                </span>
                             </div>
                         ))}
                     </div>

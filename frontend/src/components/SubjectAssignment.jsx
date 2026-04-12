@@ -76,6 +76,36 @@ const SubjectAssignment = () => {
     // handleAssignSubmit: Xử lý khi Admin nhấn "Giao việc" (Phân công môn học)
     const handleAssignSubmit = async (e) => {
         e.preventDefault();
+        
+        // Validation: End date must be >= Start date
+        const startDate = new Date(assignForm.ngay_bat_dau);
+        const endDate = new Date(assignForm.ngay_ket_thuc);
+        
+        if (endDate < startDate) {
+            setError('Thời gian kết thúc phải lớn hơn hoặc bằng thời gian bắt đầu.');
+            setTimeout(() => setError(''), 4000);
+            return;
+        }
+
+        if (assignForm.thu < 2 || assignForm.thu > 7) {
+            setError('Thứ phải nằm trong khoảng từ 2 đến 7.');
+            setTimeout(() => setError(''), 4000);
+            return;
+        }
+
+        const roomRegex = /^[a-zA-Z0-9.\-_ ]+$/;
+        if (assignForm.phong && !roomRegex.test(assignForm.phong)) {
+            setError('Tên phòng học không nên chứa kí tự đặc biệt.');
+            setTimeout(() => setError(''), 4000);
+            return;
+        }
+
+        if (assignForm.phong && assignForm.phong.length > 20) {
+            setError('Phòng vượt quá số kí tự quy định');
+            setTimeout(() => setError(''), 4000);
+            return;
+        }
+
         try {
             if (assignForm.id) {
                 await updateAssignment(assignForm.id, assignForm);
@@ -134,6 +164,24 @@ const SubjectAssignment = () => {
 
     const handleSubjectSubmit = async (e) => {
         e.preventDefault();
+
+        // Validation: Mã môn học không chứa kí tự đặc biệt
+        const codeRegex = /^[a-zA-Z0-9.\-_]+$/;
+        if (subjectForm.subject_code && !codeRegex.test(subjectForm.subject_code)) {
+            setError('Mã môn học không thể chứa kí tự đặc biệt.');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setTimeout(() => setError(''), 5000);
+            return;
+        }
+
+        const nameRegex = /^[\p{L}\p{N}\s.\-_()]+$/u;
+        if (subjectForm.subject_name && !nameRegex.test(subjectForm.subject_name)) {
+            setError('Tên môn học không nên chứa kí tự đặc biệt.');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setTimeout(() => setError(''), 5000);
+            return;
+        }
+
         try {
             if (subjectForm.id) {
                 await updateSubject(subjectForm.id, subjectForm);
@@ -284,7 +332,7 @@ const SubjectAssignment = () => {
                             <div className="wow-input-field-wrapper">
                                 <input 
                                     type="number"
-                                    min="2" max="8"
+                                    min="2" max="7"
                                     value={assignForm.thu} 
                                     onChange={(e) => setAssignForm({...assignForm, thu: e.target.value})}
                                     required
@@ -311,6 +359,7 @@ const SubjectAssignment = () => {
                                 <input 
                                     type="text"
                                     placeholder="VD: A1-102"
+                                    maxLength={20}
                                     value={assignForm.phong} 
                                     onChange={(e) => setAssignForm({...assignForm, phong: e.target.value})}
                                     required

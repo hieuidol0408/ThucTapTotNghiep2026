@@ -257,3 +257,38 @@
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+/* RESPONSIVE LOGIN */
+@media (max-width: 768px) {
+    .super-login-container {
+        padding: 1rem;
+    }
+    .super-login-card {
+        min-height: auto;
+        border-radius: 24px;
+    }
+    .super-login-right {
+        padding: 2.5rem 1.5rem;
+    }
+    .super-login-headings h2 {
+        font-size: 1.75rem;
+    }
+    .bg-shape {
+        display: none; /* Simplify background on mobile for performance */
+    }
+}
+
+@media (max-width: 480px) {
+    .super-login-headings h2 {
+        font-size: 1.5rem;
+    }
+    .super-brand {
+        margin-bottom: 2rem;
+    }
+    .super-form-actions {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+}
+

@@ -33,6 +33,18 @@ const isAdmin = (req, res, next) => {
     next();
 };
 
+const sanitizeXSS = (str) => {
+    if (typeof str !== 'string') return str;
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+};
+
+const roomRegex = /^[a-zA-Z0-9.\-_ ]+$/;
+
 // --- TKB (Đóng vai trò phân công giảng dạy) ---
 
 router.get('/assignments', verifyToken, async (req, res) => {
@@ -86,11 +98,41 @@ router.post('/assignments', verifyToken, isAdmin, async (req, res) => {
     let db;
     try {
         const { user_id, subject_id, ngay_bat_dau, ngay_ket_thuc, ca, phong, thu } = req.body;
+        
+        if (new Date(ngay_ket_thuc) < new Date(ngay_bat_dau)) {
+            return res.status(400).json({ message: 'Thời gian kết thúc phải lớn hơn hoặc bằng thời gian bắt đầu.' });
+        }
+
+        if (thu !== undefined && (thu < 2 || thu > 7)) {
+            return res.status(400).json({ message: 'Thứ phải nằm trong khoảng từ 2 đến 7.' });
+        }
+
+        if (phong && !roomRegex.test(phong)) {
+            return res.status(400).json({ message: 'Tên phòng học không nên chứa kí tự đặc biệt.' });
+        }
+
+        if (phong && phong.length > 20) {
+            return res.status(400).json({ message: 'Phòng vượt quá số kí tự quy định' });
+        }
+        
         db = await getDb();
+
+        // Check for collision: Same Lecturer, Day, Shift, and Overlapping Dates
+        const checkQuery = `
+            SELECT 1 FROM TKB 
+            WHERE MaNS = ? AND Thu = ? AND Ca = ?
+            AND (NgayBatDau <= ? AND NgayKetThuc >= ?)
+            LIMIT 1
+        `;
+        const [existing] = await db.execute(checkQuery, [user_id, thu, ca, ngay_ket_thuc, ngay_bat_dau]);
+
+        if (existing.length > 0) {
+            return res.status(400).json({ message: 'Trùng lịch giảng dạy của Giảng viên' });
+        }
         
         await db.execute(
             'INSERT INTO TKB (MaNS, MaMH, NgayBatDau, NgayKetThuc, Ca, Phong, Thu) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [user_id, subject_id, ngay_bat_dau || new Date(), ngay_ket_thuc || new Date(), ca || 1, phong || 'A1', thu || 2]
+            [user_id, subject_id, ngay_bat_dau || new Date(), ngay_ket_thuc || new Date(), ca || 1, sanitizeXSS(phong) || 'A1', thu || 2]
         );
         res.status(201).json({ message: 'Phân công môn học thành công!' });
     } catch (error) {
@@ -123,11 +165,42 @@ router.put('/assignments/:id', verifyToken, isAdmin, async (req, res) => {
         if (idParts.length !== 2) return res.status(400).json({ message: 'ID không hợp lệ.'});
         
         const { ngay_bat_dau, ngay_ket_thuc, ca, phong, thu } = req.body;
+        
+        if (new Date(ngay_ket_thuc) < new Date(ngay_bat_dau)) {
+            return res.status(400).json({ message: 'Thời gian kết thúc phải lớn hơn hoặc bằng thời gian bắt đầu.' });
+        }
+
+        if (thu !== undefined && (thu < 2 || thu > 7)) {
+            return res.status(400).json({ message: 'Thứ phải nằm trong khoảng từ 2 đến 7.' });
+        }
+
+        if (phong && !roomRegex.test(phong)) {
+            return res.status(400).json({ message: 'Tên phòng học không nên chứa kí tự đặc biệt.' });
+        }
+
+        if (phong && phong.length > 20) {
+            return res.status(400).json({ message: 'Phòng vượt quá số kí tự quy định' });
+        }
+        
         db = await getDb();
+
+        // Check for collision (excluding current record being updated)
+        const checkQuery = `
+            SELECT 1 FROM TKB 
+            WHERE MaNS = ? AND Thu = ? AND Ca = ?
+            AND (NgayBatDau <= ? AND NgayKetThuc >= ?)
+            AND NOT (MaNS = ? AND MaMH = ?)
+            LIMIT 1
+        `;
+        const [existing] = await db.execute(checkQuery, [idParts[0], thu, ca, ngay_ket_thuc, ngay_bat_dau, idParts[0], idParts[1]]);
+
+        if (existing.length > 0) {
+            return res.status(400).json({ message: 'Trùng lịch giảng dạy của Giảng viên' });
+        }
         
         await db.execute(
             'UPDATE TKB SET NgayBatDau = ?, NgayKetThuc = ?, Ca = ?, Phong = ?, Thu = ? WHERE MaNS = ? AND MaMH = ?',
-            [ngay_bat_dau, ngay_ket_thuc, ca, phong, thu, idParts[0], idParts[1]]
+            [ngay_bat_dau, ngay_ket_thuc, ca, sanitizeXSS(phong), thu, idParts[0], idParts[1]]
         );
         res.json({ message: 'Cập nhật phân công thành công!' });
     } catch (error) {
@@ -156,10 +229,28 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
     let db;
     try {
         const { subject_code, subject_name, credits } = req.body;
+        
+        const codeRegex = /^[a-zA-Z0-9.\-_]+$/;
+        if (subject_code && !codeRegex.test(subject_code)) {
+            return res.status(400).json({ message: 'Mã môn học không thể chứa kí tự đặc biệt.' });
+        }
+
+        const nameRegex = /^[\p{L}\p{N}\s.\-_()]+$/u;
+        if (subject_name && !nameRegex.test(subject_name)) {
+            return res.status(400).json({ message: 'Tên môn học không nên chứa kí tự đặc biệt.' });
+        }
+
         db = await getDb();
+
+        // Check for duplicate subject code
+        const [existing] = await db.execute('SELECT 1 FROM MonHoc WHERE MaMH = ?', [subject_code]);
+        if (existing.length > 0) {
+            return res.status(400).json({ message: 'Mã môn học đã tồn tại' });
+        }
+
         await db.execute(
             'INSERT INTO MonHoc (MaMH, TenMH, SoTinChi) VALUES (?, ?, ?)',
-            [subject_code, subject_name, credits]
+            [sanitizeXSS(subject_code), sanitizeXSS(subject_name), credits]
         );
         res.status(201).json({ message: 'Thêm môn học mới thành công!' });
     } catch (error) {
@@ -174,10 +265,22 @@ router.put('/:id', verifyToken, isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { subject_name, credits } = req.body;
+        
+        // id here is the MaMH being updated
+        const codeRegex = /^[a-zA-Z0-9.\-_]+$/;
+        if (id && !codeRegex.test(id)) {
+            return res.status(400).json({ message: 'Mã môn học không thể chứa kí tự đặc biệt.' });
+        }
+
+        const nameRegex = /^[\p{L}\p{N}\s.\-_()]+$/u;
+        if (subject_name && !nameRegex.test(subject_name)) {
+            return res.status(400).json({ message: 'Tên môn học không nên chứa kí tự đặc biệt.' });
+        }
+
         db = await getDb();
         await db.execute(
             'UPDATE MonHoc SET TenMH = ?, SoTinChi = ? WHERE MaMH = ?',
-            [subject_name, credits, id]
+            [sanitizeXSS(subject_name), credits, id]
         );
         res.json({ message: 'Cập nhật môn học thành công!' });
     } catch (error) {

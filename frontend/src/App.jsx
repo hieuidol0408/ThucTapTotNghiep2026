@@ -1,11 +1,12 @@
-import React, { useContext } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
+import React, { useContext, useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import Login from './components/Login';
 import StaffManagement from './components/StaffManagement';
 import SubjectAssignment from './components/SubjectAssignment';
 import DashboardHome from './components/DashboardHome';
 import TaskAssignment from './components/TaskAssignment';
+import Profile from './components/Profile';
 import stuLogo from './assets/stu_logo.png';
 import './App.css';
 
@@ -97,41 +98,35 @@ const getPageTitle = (pathname) => {
 
 const DashboardLayout = () => {
     const { user, logoutUser } = useContext(AuthContext);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const location = useLocation();
+    const navigate = useNavigate();
+
+    const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+    const closeSidebar = () => setIsSidebarOpen(false);
+
+    // Close sidebar when route changes on mobile
+    useEffect(() => {
+        closeSidebar();
+    }, [location.pathname]);
 
     return (
-        <div className="wow-layout-root" style={{ 
-            display: 'block', 
-            position: 'relative', 
-            minHeight: '100vh', 
-            width: '100%',
-            background: '#f8fafc' 
-        }}>
-            {/* Thanh Menu bên trái - ÉP HIỂN THỊ TUYỆT ĐỐI */}
-            <aside className="wow-sidebar-fixed" style={{ 
-                width: '280px', 
-                background: '#ffffff', 
-                position: 'fixed', 
-                top: 0, 
-                left: 0, 
-                bottom: 0, 
-                zIndex: 999999, // Siêu ưu tiên
-                display: 'flex',
-                flexDirection: 'column',
-                padding: '2rem 1.5rem',
-                boxShadow: '10px 0 30px -10px rgba(0,0,0,0.05)',
-                borderRight: '1px solid #e2e8f0',
-                color: '#0f172a',
-                visibility: 'visible',
-                opacity: 1
-            }}>
-                <div className="sidebar-logo" style={{ marginBottom: '3rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <img src={stuLogo} alt="STU Logo" className="logo-img-wow" style={{ width: '45px', height: '45px', borderRadius: '12px', background: 'white', padding: '5px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }} />
-                    <span style={{ color: '#0f172a', fontWeight: 800, fontSize: '1.4rem', letterSpacing: '1px' }}>STU WORK</span>
+        <div className={`wow-layout-root ${isSidebarOpen ? 'sidebar-open' : ''}`}>
+            {/* Mobile Overlay */}
+            {isSidebarOpen && <div className="wow-sidebar-overlay" onClick={closeSidebar}></div>}
+
+            {/* Sidebar - Premium Glassmorphism */}
+            <aside className={`wow-sidebar-fixed ${isSidebarOpen ? 'show' : ''}`}>
+                <div className="sidebar-logo">
+                    <img src={stuLogo} alt="STU Logo" className="logo-img-wow" />
+                    <span className="brand-name">STU WORK</span>
                 </div>
                 
-                <nav className="sidebar-nav" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <nav className="sidebar-nav">
+                    <div className="sidebar-section-title">Hệ thống</div>
                     <NavItem icon={IconDashboard} label="Trang Chủ" path="/dashboard" />
+                    
+                    <div className="sidebar-section-title">Quản lý</div>
                     {user.role === 'admin' && (
                         <NavItem icon={IconUsers} label="Quản lý nhân sự" path="/dashboard/staff" />
                     )}
@@ -143,79 +138,63 @@ const DashboardLayout = () => {
                     <NavItem icon={IconClipboardList} label="Phân công công việc" path="/dashboard/tasks" />
                 </nav>
 
-                <div className="sidebar-footer" style={{ marginTop: 'auto', paddingTop: '2rem', borderTop: '1px dashed #e2e8f0' }}>
-                    <button className="logout-btn" onClick={logoutUser} style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        width: '100%',
-                        padding: '12px',
-                        background: 'transparent',
-                        border: 'none',
-                        color: '#475569',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        borderRadius: '10px',
-                        transition: 'all 0.3s'
-                    }}>
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="#ef4444" style={{ width: '22px', height: '22px' }}>
+                <div className="sidebar-footer">
+                    <button className="logout-btn" onClick={logoutUser}>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" style={{ width: '22px', height: '22px' }}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
                         </svg>
-                        <span style={{ color: '#ef4444' }}>Đăng xuất</span>
+                        <span>Đăng xuất</span>
                     </button>
                 </div>
             </aside>
+
             
-            {/* Nội dung chính - PHẢI CÓ LỀ TRÁI 280PX */}
-            <main className="wow-main-area" style={{ 
-                marginLeft: '280px', 
-                minHeight: '100vh',
-                display: 'flex',
-                flexDirection: 'column',
-                background: '#f8fafc',
-                position: 'relative'
-            }}>
-                <header className="wow-header-top" style={{
-                    padding: '1.2rem 2.5rem',
-                    background: 'white',
-                    borderBottom: '1px solid #e2e8f0',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    position: 'sticky',
-                    top: 0,
-                    zIndex: 1000
-                }}>
+            {/* Nội dung chính */}
+            <main className="wow-main-area">
+                <header className="wow-header-top">
                     <div className="header-left">
-                        <h2 style={{ margin: 0, fontSize: '1.5rem', color: '#0f172a', fontWeight: 800 }}>{getPageTitle(location.pathname)}</h2>
-                        <p className="header-subtitle" style={{ margin: '4px 0 0 0', color: '#64748b', fontWeight: 500 }}>Chào mừng trở lại, {user.full_name}!</p>
+                        {/* Toggle button always visible on mobile in the main header */}
+                        <button className="mobile-toggle-btn-wow" onClick={toggleSidebar}>
+                            {isSidebarOpen ? (
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{width:24,height:24}}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            ) : (
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{width:24,height:24}}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                            )}
+                        </button>
+                        <div className="brand-logo-mobile">
+                            <img src={stuLogo} alt="Logo" />
+                        </div>
+                        <div className="title-group-wow">
+                            <h2 className="page-title-wow">{getPageTitle(location.pathname)}</h2>
+                            <p className="header-subtitle-wow">Chào mừng, {user.full_name.split(' ').pop()}!</p>
+                        </div>
                     </div>
-                    <div className="user-profile" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <div className="user-info" style={{ textAlign: 'right' }}>
-                            <div className="user-name" style={{ fontWeight: 700, color: '#0f172a' }}>{user.full_name}</div>
-                            <div className="user-role badge" style={{ fontSize: '0.75rem', background: '#e0e7ff', color: '#4f46e5', padding: '2px 8px', borderRadius: '4px', fontWeight: 700, marginTop: '2px' }}>
-                                {user.role === 'admin' ? 'Ban chủ nhiệm Khoa' : 'Giảng viên - Nhân viên'}
+                    <div className="user-profile" onClick={() => navigate('/dashboard/profile')} style={{ cursor: 'pointer' }}>
+                        <div className="user-info">
+                            <div className="user-name">{user.full_name}</div>
+                            <div className="user-role-badge">
+                                {user.role === 'admin' ? 'Quản trị' : 'Giảng viên'}
                             </div>
                         </div>
-                        <div className="avatar" style={{ 
-                            width: '42px', height: '42px', borderRadius: '12px', 
-                            background: 'linear-gradient(135deg, #4f46e5 0%, #0ea5e9 100%)', 
-                            color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontWeight: 800, fontSize: '1.2rem'
-                        }}>
-                            {user.full_name.charAt(0)}
+                        <div className="avatar-wow" style={user.avatar_url ? {
+                            background: `url(${user.avatar_url}) center/cover no-repeat`,
+                            border: '2px solid rgba(255,255,255,0.8)'
+                        } : {}}>
+                            {!user.avatar_url && user.full_name?.charAt(0)}
                         </div>
                     </div>
                 </header>
                 
-                <Routes>
-                  <Route index element={<DashboardHome user={user} />} />
-                  <Route path="staff" element={<StaffManagement />} />
-                  <Route path="subjects" element={<SubjectAssignment />} />
-                  <Route path="tasks" element={<TaskAssignment />} />
-                  {/* Default fallback inside dashboard */}
-                  <Route path="*" element={<Navigate to="" replace />} />
-                </Routes>
+                <div className="wow-page-content">
+                    <Routes>
+                      <Route index element={<DashboardHome user={user} />} />
+                      <Route path="staff" element={<StaffManagement />} />
+                      <Route path="subjects" element={<SubjectAssignment />} />
+                      <Route path="tasks" element={<TaskAssignment />} />
+                      <Route path="profile" element={<Profile />} />
+                      <Route path="*" element={<Navigate to="" replace />} />
+                    </Routes>
+                </div>
             </main>
         </div>
     );

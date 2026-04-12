@@ -23,3 +23,8 @@ frontend/dist
 # OS Metadata
 .DS_Store
 Thumbs.db
+
+# Project Specific
+backend/uploads/
+backend/scratch/
+*.log

@@ -12,7 +12,7 @@ const TaskAssignment = () => {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
-    category: 'Giảng dạy',
+    category: '',
     description: '',
     assignee_id: '',
     start_date: '',
@@ -75,21 +75,39 @@ const TaskAssignment = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.title || !formData.category || !formData.assignee_id || !formData.start_date || !formData.end_date) {
-      setError('Vui lòng điền các trường bắt buộc');
+    if (!formData.title || !formData.title.trim()) {
+      setError('Tên nhiệm vụ không được để trống hoặc chỉ chứa khoảng trắng');
+      return;
+    }
+
+    if (!formData.assignee_id || !formData.start_date || !formData.end_date) {
+      setError('Vui lòng điền đầy đủ các thông tin bắt buộc');
+      return;
+    }
+
+    if (!formData.category) {
+      setError('Vui lòng chọn chuyên môn giảng dạy');
+      return;
+    }
+
+    if (new Date(formData.end_date) < new Date(formData.start_date)) {
+      setError('Ngày kết thúc không thể trước ngày bắt đầu');
       return;
     }
 
     try {
       setLoading(true);
       setError('');
-      await createTask(formData);
+      await createTask({
+        ...formData,
+        title: formData.title.trim()
+      });
       setMessage('Giao công việc mới cực mượt thành công!');
       
       // Reset form & reload
       setFormData({
         title: '',
-        category: 'Giảng dạy',
+        category: '',
         description: '',
         assignee_id: '',
         start_date: '',
@@ -228,7 +246,7 @@ const TaskAssignment = () => {
                     onClick={() => {
                         setShowForm(!showForm);
                         setError('');
-                        setFormData({ title: '', category: 'Giảng dạy', description: '', assignee_id: '', start_date: '', end_date: '', status: 'todo' });
+                        setFormData({ title: '', category: '', description: '', assignee_id: '', start_date: '', end_date: '', status: 'todo' });
                     }}
                 >
                     {showForm ? 'Đóng lại' : (
@@ -311,6 +329,7 @@ const TaskAssignment = () => {
                                     onChange={handleInputChange}
                                     required
                                 >
+                                    <option value="" disabled hidden>Chuyên môn giảng dạy</option>
                                     <option value="Giảng dạy">Chuyên môn giảng dạy</option>
                                     <option value="Nghiên cứu">Nghiên cứu khoa học</option>
                                     <option value="Hành chính">Công tác hành chính</option>
@@ -344,7 +363,7 @@ const TaskAssignment = () => {
                                     required
                                 >
                                     <option value="">Lựa chọn người phụ trách...</option>
-                                    {users.map(u => (
+                                    {users.filter(u => u.status === 'active' || !u.status).map(u => (
                                         <option key={u.user_id} value={u.user_id}>{u.full_name} (@{u.employee_code || u.username})</option>
                                     ))}
                                 </select>

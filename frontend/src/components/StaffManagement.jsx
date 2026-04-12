@@ -116,7 +116,7 @@ const StaffManagement = () => {
     };
 
     const handleEdit = (user) => {
-        setEditId(user.id);
+        setEditId(user.user_id);
         setFormData({
             employee_code: user.employee_code,
             email: user.email,
@@ -132,7 +132,7 @@ const StaffManagement = () => {
     const toggleStatus = async (user) => {
         const newStatus = user.status === 'active' ? 'inactive' : 'active';
         try {
-            await updateUser(user.id, { ...user, status: newStatus });
+            await updateUser(user.user_id, { ...user, status: newStatus });
             setMessage(`✨ Đã ${newStatus === 'active' ? 'mở khóa' : 'khóa'} tài khoản ${user.full_name}.`);
             loadUsers(search);
             setTimeout(() => setMessage(''), 3000);
@@ -270,22 +270,25 @@ const StaffManagement = () => {
                                 </div>
                                 {formErrors.full_name && <span style={{color:'#ef4444', fontSize:'0.82rem', marginTop:'0.35rem', display:'block', fontWeight:'600'}}>⚠️ {formErrors.full_name}</span>}
                             </div>
-                            <div className="wow-input-group">
-                                <label>Mật khẩu {editId ? <span style={{opacity:0.5, fontSize:'0.82rem', fontWeight:'500', marginLeft:'4px'}}>(Bỏ trống nếu không đổi)</span> : <span style={{color:'#94a3b8', fontWeight:'500', fontSize:'0.82rem'}}>(tối thiểu 6 ký tự)</span>}</label>
-                                <div className="wow-input-field-wrapper" style={formErrors.password ? {border:'1.5px solid #ef4444', borderRadius:'14px'} : {}}>
-                                    <svg className="wow-field-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                                    <input 
-                                        type="password" 
-                                        value={formData.password}
-                                        onChange={(e) => {
-                                            setFormData({...formData, password: e.target.value});
-                                            if (formErrors.password) setFormErrors({...formErrors, password: ''});
-                                        }}
-                                        placeholder="Ít nhất 6 ký tự..."
-                                    />
+                            
+                            {!editId && (
+                                <div className="wow-input-group">
+                                    <label>Mật khẩu <span style={{color:'#94a3b8', fontWeight:'500', fontSize:'0.82rem'}}>(tối thiểu 6 ký tự)</span></label>
+                                    <div className="wow-input-field-wrapper" style={formErrors.password ? {border:'1.5px solid #ef4444', borderRadius:'14px'} : {}}>
+                                        <svg className="wow-field-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                        <input 
+                                            type="password" 
+                                            value={formData.password}
+                                            onChange={(e) => {
+                                                setFormData({...formData, password: e.target.value});
+                                                if (formErrors.password) setFormErrors({...formErrors, password: ''});
+                                            }}
+                                            placeholder="Ít nhất 6 ký tự..."
+                                        />
+                                    </div>
+                                    {formErrors.password && <span style={{color:'#ef4444', fontSize:'0.82rem', marginTop:'0.35rem', display:'block', fontWeight:'600'}}>⚠️ {formErrors.password}</span>}
                                 </div>
-                                {formErrors.password && <span style={{color:'#ef4444', fontSize:'0.82rem', marginTop:'0.35rem', display:'block', fontWeight:'600'}}>⚠️ {formErrors.password}</span>}
-                            </div>
+                            )}
                             <div className="wow-input-group">
                                 <label>Vai trò truy cập</label>
                                 <div className="wow-input-field-wrapper">
@@ -316,7 +319,7 @@ const StaffManagement = () => {
                         <div style={{marginTop:'3.5rem', textAlign:'center'}}>
                             <button type="submit" className="btn-wow" style={{width:'100%', maxWidth:'450px', justifyContent:'center'}}>
                                 <span className="mr-2">{editId ? '💾' : '🚀'}</span>
-                                {editId ? 'Cập nhật thay đổi ngay' : 'Kích hoạt tài khoản nhân sự'}
+                                {editId ? 'Cập nhật thông tin nhân sự' : 'Kích hoạt tài khoản nhân sự'}
                             </button>
                         </div>
                     </form>
@@ -356,7 +359,7 @@ const StaffManagement = () => {
                         </div>
                     ) : (
                         users.map(u => (
-                            <div className="wow-staff-row" key={u.id}>
+                            <div className="wow-staff-row" key={u.user_id}>
                                 <div className="wow-staff-id" onClick={() => handleViewDetail(u)} style={{cursor:'pointer'}}>#ID-{u.id}</div>
                                 <div className="wow-staff-info" onClick={() => handleViewDetail(u)} style={{cursor:'pointer'}}>
                                     <div className="wow-staff-avatar">{u.full_name.charAt(0)}</div>

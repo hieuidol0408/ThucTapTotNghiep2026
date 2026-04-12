@@ -7,11 +7,21 @@ import '../super-login.css';
 const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     
     const { loginUser } = useContext(AuthContext);
     const navigate = useNavigate();
+
+    // Check for remembered username on mount
+    React.useEffect(() => {
+        const savedUsername = localStorage.getItem('rememberedUsername');
+        if (savedUsername) {
+            setUsername(savedUsername);
+            setRememberMe(true);
+        }
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -20,6 +30,14 @@ const Login = () => {
 
         try {
             const data = await login(username, password);
+            
+            // Handle Remember Me preference
+            if (rememberMe) {
+                localStorage.setItem('rememberedUsername', username);
+            } else {
+                localStorage.removeItem('rememberedUsername');
+            }
+
             loginUser(data.user, data.token);
             navigate('/dashboard');
         } catch (err) {
@@ -117,7 +135,11 @@ const Login = () => {
                         
                         <div className="super-form-actions">
                             <label className="super-checkbox">
-                                <input type="checkbox" />
+                                <input 
+                                    type="checkbox" 
+                                    checked={rememberMe}
+                                    onChange={(e) => setRememberMe(e.target.checked)}
+                                />
                                 <span>Ghi nhớ phiên đăng nhập</span>
                             </label>
                         </div>
@@ -133,6 +155,7 @@ const Login = () => {
                 </div>
             </div>
         </div>
+
     );
 };
 
