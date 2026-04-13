@@ -153,7 +153,7 @@ const TaskAssignment = () => {
       loadTasks();
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
-      setError('Lỗi khi gửi báo cáo');
+      setError(err.response?.data?.message || 'Lỗi khi gửi báo cáo');
     } finally {
       setLoading(false);
     }

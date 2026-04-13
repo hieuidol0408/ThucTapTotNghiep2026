@@ -149,6 +149,30 @@ router.post('/:id/reports', authMiddleware, async (req, res) => {
             return res.status(400).json({ message: 'Vui lòng cung cấp nội dung báo cáo và tiến độ' });
         }
 
+        // Ràng buộc nghiệp vụ: Không chứa ký tự đặc biệt nguy hiểm hoặc không hợp lệ
+        const noteRegex = /^[\p{L}\p{N}\s\.,!?\-'":()/]+$/u;
+        if (!noteRegex.test(report_note)) {
+            return res.status(400).json({ message: 'Kí tự không hợp lệ' });
+        }
+
+        // Ràng buộc nghiệp vụ: Không được giảm tiến độ
+        const [latestProgress] = await db.execute('SELECT MAX(PhanTramHoanThanh) as maxProgress FROM BaoCaoTienDo WHERE MaCV = ?', [id]);
+        if (latestProgress[0].maxProgress !== null && progress_percent < latestProgress[0].maxProgress) {
+            return res.status(400).json({ message: 'Không được giảm tiến độ' });
+        }
+
+        // Ràng buộc nghiệp vụ: Kiểm tra trùng tiến độ
+        const [duplicate] = await db.execute('SELECT 1 FROM BaoCaoTienDo WHERE MaCV = ? AND PhanTramHoanThanh = ?', [id, progress_percent]);
+        if (duplicate.length > 0) {
+            return res.status(400).json({ message: 'Tiến độ hiện tại đã bị trùng' });
+        }
+
+        // Ràng buộc nghiệp vụ: Kiểm tra trùng ghi chú
+        const [duplicateNote] = await db.execute('SELECT 1 FROM BaoCaoTienDo WHERE MaCV = ? AND NoiDungBaoCao = ?', [id, report_note]);
+        if (duplicateNote.length > 0) {
+            return res.status(400).json({ message: 'Phần ghi chú không được phép trùng với báo cáo trước đó' });
+        }
+
         const queryReport = `INSERT INTO BaoCaoTienDo (MaNS, MaCV, NoiDungBaoCao, PhanTramHoanThanh, NgayGui) VALUES (?, ?, ?, ?, ?)`;
         await db.execute(queryReport, [req.user.id, id, report_note, progress_percent, new Date()]);
 
