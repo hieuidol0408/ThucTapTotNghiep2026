@@ -1,9 +1,22 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
+const jwt = require('jsonwebtoken');
+
+const authMiddleware = (req, res, next) => {
+    const token = req.header('Authorization')?.split(' ')[1];
+    if (!token) return res.status(401).json({ message: 'Không tìm thấy token truy cập' });
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (err) {
+        res.status(401).json({ message: 'Token không hợp lệ' });
+    }
+};
 
 // Lấy danh sách nhắc nhở của một user
-router.get('/user/:userId', async (req, res) => {
+router.get('/user/:userId', authMiddleware, async (req, res) => {
     try {
         const [rows] = await db.query('SELECT * FROM reminders WHERE user_id = ? ORDER BY reminder_time ASC', [req.params.userId]);
         res.json(rows);
@@ -13,7 +26,7 @@ router.get('/user/:userId', async (req, res) => {
 });
 
 // 1. Tạo nhắc nhở
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
     const { task_id, user_id, message, reminder_time } = req.body;
     try {
         const [result] = await db.query(
@@ -27,7 +40,7 @@ router.post('/', async (req, res) => {
 });
 
 // 2. Cập nhật nhắc nhở
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
     const { message, reminder_time } = req.body;
     try {
         await db.query(
@@ -41,7 +54,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // 3. Xóa nhắc nhở
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
     try {
         await db.query('DELETE FROM reminders WHERE reminder_id = ?', [req.params.id]);
         res.json({ message: 'Đã xóa nhắc nhở' });
@@ -51,7 +64,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // 4. Bật/tắt nhắc nhở
-router.patch('/:id/toggle', async (req, res) => {
+router.patch('/:id/toggle', authMiddleware, async (req, res) => {
     const { is_active } = req.body; // truyền lên 1 hoặc 0
     try {
         await db.query('UPDATE reminders SET is_active = ? WHERE reminder_id = ?', [is_active, req.params.id]);

@@ -328,8 +328,6 @@ body {
         display: none; /* Hide names on mobile, use avatar only */
     }
 }
-    cursor: pointer;
-}
 
 .wow-sidebar-overlay {
     position: fixed;
@@ -367,7 +365,23 @@ body {
     .wow-sidebar-fixed {
         transform: translateX(-100%);
         width: 280px;
-        padding-top: 1rem;
+        top: 85px; /* Nằm dưới header */
+        bottom: 0;
+        border-radius: 0 28px 28px 0;
+        z-index: 999;
+    }
+
+    .wow-sidebar-fixed .sidebar-logo {
+        display: none; /* Ẩn logo trong sidebar vì header đã có logo */
+    }
+
+    .wow-sidebar-overlay {
+        top: 85px; /* Phủ từ dưới header */
+        z-index: 998;
+    }
+
+    .wow-header-top {
+        z-index: 1000; /* Header luôn đè các thành phần khác kể cả sidebar */
     }
 
     .wow-sidebar-fixed.show {
@@ -1538,4 +1552,57 @@ body {
 .empty-state p {
     font-size: 1rem;
     font-weight: 500;
+}
+
+/* Custom Desktop Collapsed Sidebar class */
+.sidebar-desktop-collapsed .wow-sidebar-fixed {
+    width: 90px;
+    padding: 2rem 1rem;
+}
+.sidebar-desktop-collapsed .brand-name,
+.sidebar-desktop-collapsed .sidebar-section-title,
+.sidebar-desktop-collapsed .nav-item span,
+.sidebar-desktop-collapsed .logout-btn span {
+    display: none;
+}
+.sidebar-desktop-collapsed .logout-btn {
+    padding: 1rem;
+    justify-content: center;
+}
+.sidebar-desktop-collapsed .nav-item {
+    justify-content: center;
+    padding: 0.85rem;
+}
+.sidebar-desktop-collapsed .sidebar-logo {
+    justify-content: center;
+    padding-left: 0;
+}
+.sidebar-desktop-collapsed .wow-main-area {
+    margin-left: 90px;
+    width: calc(100% - 90px);
+}
+
+.desktop-toggle-btn-wow {
+    display: flex;
+    width: 44px;
+    height: 44px;
+    background: rgba(241, 245, 249, 0.8);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 12px;
+    color: var(--primary);
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.desktop-toggle-btn-wow:hover {
+    background: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+@media (max-width: 850px) {
+    .desktop-toggle-btn-wow {
+        display: none !important;
+    }
 }

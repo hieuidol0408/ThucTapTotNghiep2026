@@ -6,6 +6,7 @@ import StaffManagement from './components/StaffManagement';
 import SubjectAssignment from './components/SubjectAssignment';
 import DashboardHome from './components/DashboardHome';
 import TaskAssignment from './components/TaskAssignment';
+import ReminderManagement from './components/ReminderManagement';
 import Profile from './components/Profile';
 import stuLogo from './assets/stu_logo.png';
 import './App.css';
@@ -54,6 +55,12 @@ const IconClipboardList = (props) => (
     </svg>
 );
 
+const IconClock = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+    </svg>
+);
+
 // Link Component tùy chỉnh để hiển thị các mục trên thanh Sidebar
 const NavItem = ({ icon: Icon, label, path }) => {
     const location = useLocation();
@@ -93,16 +100,19 @@ const getPageTitle = (pathname) => {
     if (pathname === '/dashboard/staff') return 'Quản lý nhân sự';
     if (pathname === '/dashboard/subjects') return 'Quản lý môn học';
     if (pathname === '/dashboard/tasks') return 'Phân công công việc';
+    if (pathname === '/dashboard/reminders') return 'Nhắc nhở công việc';
     return 'Trang Chủ';
 };
 
 const DashboardLayout = () => {
     const { user, logoutUser } = useContext(AuthContext);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
 
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+    const toggleDesktopSidebar = () => setIsDesktopCollapsed(!isDesktopCollapsed);
     const closeSidebar = () => setIsSidebarOpen(false);
 
     // Close sidebar when route changes on mobile
@@ -111,7 +121,7 @@ const DashboardLayout = () => {
     }, [location.pathname]);
 
     return (
-        <div className={`wow-layout-root ${isSidebarOpen ? 'sidebar-open' : ''}`}>
+        <div className={`wow-layout-root ${isSidebarOpen ? 'sidebar-open' : ''} ${isDesktopCollapsed ? 'sidebar-desktop-collapsed' : ''}`}>
             {/* Mobile Overlay */}
             {isSidebarOpen && <div className="wow-sidebar-overlay" onClick={closeSidebar}></div>}
 
@@ -136,6 +146,7 @@ const DashboardLayout = () => {
                         path="/dashboard/subjects" 
                     />
                     <NavItem icon={IconClipboardList} label="Phân công công việc" path="/dashboard/tasks" />
+                    <NavItem icon={IconClock} label="Nhắc nhở công việc" path="/dashboard/reminders" />
                 </nav>
 
                 <div className="sidebar-footer">
@@ -160,6 +171,11 @@ const DashboardLayout = () => {
                             ) : (
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{width:24,height:24}}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
                             )}
+                        </button>
+                        <button className="desktop-toggle-btn-wow" onClick={toggleDesktopSidebar}>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{width:24,height:24}}>
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16M4 18h16"></path>
+                            </svg>
                         </button>
                         <div className="brand-logo-mobile">
                             <img src={stuLogo} alt="Logo" />
@@ -191,6 +207,7 @@ const DashboardLayout = () => {
                       <Route path="staff" element={<StaffManagement />} />
                       <Route path="subjects" element={<SubjectAssignment />} />
                       <Route path="tasks" element={<TaskAssignment />} />
+                      <Route path="reminders" element={<ReminderManagement />} />
                       <Route path="profile" element={<Profile />} />
                       <Route path="*" element={<Navigate to="" replace />} />
                     </Routes>
