@@ -5,30 +5,38 @@
     font-family: 'Outfit', 'Inter', sans-serif;
 }
 
-.reminder-header {
+/* Glass Header Banner */
+.wow-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
-    margin-bottom: 2.5rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    align-items: center;
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 32px;
+    padding: 2.5rem 3.5rem;
+    box-shadow: 0 15px 45px -15px rgba(0, 0, 0, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+    margin-bottom: 3rem;
 }
 
-.reminder-header h2 {
-    font-size: 2rem;
-    font-weight: 800;
-    color: #1e293b;
-    margin: 0;
-    letter-spacing: -0.5px;
-    background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+.wow-header-left h1 {
+    font-size: 2.75rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    letter-spacing: -1.5px;
+    margin-bottom: 0.5rem;
+    line-height: 1.1;
+    margin-top: 0;
 }
 
-.reminder-header p {
+.wow-header-left p {
     color: #64748b;
-    margin: 0.5rem 0 0;
+    font-size: 1.15rem;
     font-weight: 500;
+    margin: 0;
 }
 
 .reminder-grid {

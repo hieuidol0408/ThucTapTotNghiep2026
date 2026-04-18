@@ -146,7 +146,9 @@ const DashboardLayout = () => {
                         path="/dashboard/subjects" 
                     />
                     <NavItem icon={IconClipboardList} label="Phân công công việc" path="/dashboard/tasks" />
-                    <NavItem icon={IconClock} label="Nhắc nhở công việc" path="/dashboard/reminders" />
+                    {user.role !== 'admin' && (
+                        <NavItem icon={IconClock} label="Nhắc nhở công việc" path="/dashboard/reminders" />
+                    )}
                 </nav>
 
                 <div className="sidebar-footer">
@@ -201,13 +203,15 @@ const DashboardLayout = () => {
                     </div>
                 </header>
                 
-                <div className="wow-page-content">
+                <div className="wow-page-content" key={location.pathname}>
                     <Routes>
                       <Route index element={<DashboardHome user={user} />} />
                       <Route path="staff" element={<StaffManagement />} />
                       <Route path="subjects" element={<SubjectAssignment />} />
                       <Route path="tasks" element={<TaskAssignment />} />
-                      <Route path="reminders" element={<ReminderManagement />} />
+                      {user.role !== 'admin' && (
+                          <Route path="reminders" element={<ReminderManagement />} />
+                      )}
                       <Route path="profile" element={<Profile />} />
                       <Route path="*" element={<Navigate to="" replace />} />
                     </Routes>

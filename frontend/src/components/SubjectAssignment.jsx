@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { fetchSubjects, fetchAssignments, createAssignment, updateAssignment, deleteAssignment, createSubject, updateSubject, deleteSubject } from '../api/subjects';
 import { fetchUsers } from '../api/users';
 import { AuthContext } from '../context/AuthContext';
+import PaginationWow from './PaginationWow';
 import '../SubjectAssignmentWow.css';
 
 const SubjectAssignment = () => {
@@ -10,6 +11,8 @@ const SubjectAssignment = () => {
 
     // State for Tabs
     const [activeTab, setActiveTab] = useState('assignment'); // 'assignment' or 'management'
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
 
     // Data State
     const [subjects, setSubjects] = useState([]);
@@ -224,26 +227,35 @@ const SubjectAssignment = () => {
 
     if (loading) return <div className="loading-wow">Đang tải dữ liệu...</div>;
 
+    const currentList = activeTab === 'assignment' ? assignments : subjects;
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = currentList.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(currentList.length / itemsPerPage);
+
+    const currentAssignments = activeTab === 'assignment' ? currentItems : [];
+    const currentSubjects = activeTab === 'management' ? currentItems : [];
+
     return (
         <div className="subject-wow-container">
             <div className="subject-wow-bg"></div>
 
-            <div className="wow-header-card">
-                <div className="wow-header-content">
-                    <h1 className="wow-main-title">Quản lý môn học</h1>
-                    <p className="wow-sub-title">Quản lý danh mục và phân công giảng dạy cho toàn Khoa.</p>
+            <div className="wow-header">
+                <div className="wow-header-left">
+                    <h1>Quản lý môn học</h1>
+                    <p>Quản lý danh mục và phân công giảng dạy cho toàn Khoa.</p>
                 </div>
                 {isAdmin && (
                     <div className="wow-tabs">
                         <button 
                             className={`tab-btn ${activeTab === 'assignment' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('assignment')}
+                            onClick={() => { setActiveTab('assignment'); setCurrentPage(1); }}
                         >
                             Phân công giảng dạy
                         </button>
                         <button 
                             className={`tab-btn ${activeTab === 'management' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('management')}
+                            onClick={() => { setActiveTab('management'); setCurrentPage(1); }}
                         >
                             Quản lý danh mục
                         </button>
@@ -451,8 +463,8 @@ const SubjectAssignment = () => {
                 </div>
 
                 {activeTab === 'assignment' ? (
-                    assignments.length > 0 ? (
-                        assignments.map((a, idx) => (
+                    currentAssignments.length > 0 ? (
+                        currentAssignments.map((a, idx) => (
                             <div key={a.id} className="wow-assignment-row" style={{ animationDelay: `${idx * 0.05}s` }}>
                                 <div className="wow-lecturer-cell">
                                     <div className="wow-lecturer-avatar">{a.lecturer_name.charAt(0)}</div>
@@ -492,8 +504,8 @@ const SubjectAssignment = () => {
                         </div>
                     )
                 ) : (
-                    subjects.length > 0 ? (
-                        subjects.map((s, idx) => (
+                    currentSubjects.length > 0 ? (
+                        currentSubjects.map((s, idx) => (
                             <div key={s.id} className="wow-assignment-row management" style={{ animationDelay: `${idx * 0.05}s` }}>
                                 <div className="wow-subject-cell">
                                     <span className="wow-subject-name">{s.subject_name}</span>
@@ -518,6 +530,10 @@ const SubjectAssignment = () => {
                             <p>Vui lòng thêm môn học mới để bắt đầu phân công.</p>
                         </div>
                     )
+                )}
+
+                {currentList.length > 0 && (
+                    <PaginationWow currentPage={currentPage} totalPages={totalPages} paginate={setCurrentPage} />
                 )}
             </div>
         </div>

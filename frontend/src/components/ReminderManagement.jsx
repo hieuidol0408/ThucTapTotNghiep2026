@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { getUserReminders, createReminder, deleteReminder, toggleReminder } from '../api/reminders';
 import { fetchTasks } from '../api/tasks';
+import PaginationWow from './PaginationWow';
 import './ReminderWow.css';
 
 const ReminderManagement = () => {
@@ -10,6 +11,8 @@ const ReminderManagement = () => {
     const [tasks, setTasks] = useState([]);
     const [newReminder, setNewReminder] = useState({ task_id: '', message: '', reminder_time: '' });
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
 
     const loadInitialData = React.useCallback(async () => {
         setLoading(true);
@@ -26,7 +29,8 @@ const ReminderManagement = () => {
             setReminders(validReminders);
             
             // Lọc ra các công việc (tasks) được giao cho giảng viên hiện tại
-            const myTasks = validTasks.filter(t => t.assigned_to === user.id);
+            // LƯU Ý: API backend trả về trường 'assignee_id', thay vì 'assigned_to'
+            const myTasks = validTasks.filter(t => t.assignee_id === user.id);
             setTasks(myTasks);
             
             if (myTasks.length > 0) {
@@ -82,14 +86,19 @@ const ReminderManagement = () => {
 
     const getTaskSubjectName = (taskId) => {
         const t = tasks.find(x => x.task_id === taskId);
-        return t ? t.subject_name : "Công việc chung";
+        return t ? t.title : "Công việc chung";
     };
+
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentReminders = reminders.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(reminders.length / itemsPerPage);
 
     return (
         <div className="reminder-page-body">
-            <div className="reminder-header">
-                <div>
-                    <h2>Lịch Nhắc Nhở</h2>
+            <div className="wow-header">
+                <div className="wow-header-left">
+                    <h1>Lịch Nhắc Nhở</h1>
                     <p>Quản lý hộp thư báo thức cá nhân của bạn</p>
                 </div>
             </div>
@@ -116,7 +125,7 @@ const ReminderManagement = () => {
                                 {tasks.length === 0 && <option value="">Không có công việc nào</option>}
                                 {tasks.map(t => (
                                     <option key={t.task_id} value={t.task_id}>
-                                        {t.subject_name} - Học kỳ {t.semester}
+                                        {t.title} {t.category ? `- ${t.category}` : ''}
                                     </option>
                                 ))}
                             </select>
@@ -175,7 +184,7 @@ const ReminderManagement = () => {
                         </div>
                     ) : (
                         <div className="reminder-list-wow">
-                            {reminders.map(rem => (
+                            {currentReminders.map(rem => (
                                 <div key={rem.reminder_id} className={`reminder-item-wow ${!rem.is_active ? 'inactive' : ''}`}>
                                     <div className="reminder-info">
                                         <div className="reminder-msg">{rem.message}</div>
@@ -211,6 +220,10 @@ const ReminderManagement = () => {
                                 </div>
                             ))}
                         </div>
+                    )}
+                    
+                    {reminders.length > 0 && (
+                        <PaginationWow currentPage={currentPage} totalPages={totalPages} paginate={setCurrentPage} />
                     )}
                 </div>
             </div>

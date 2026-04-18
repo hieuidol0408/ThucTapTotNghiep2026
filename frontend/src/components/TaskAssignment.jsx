@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { fetchTasks, createTask, deleteTask, submitTaskReport, fetchTaskReports } from '../api/tasks';
 import { fetchUsers } from '../api/users';
+import PaginationWow from './PaginationWow';
 import '../TaskAssignmentWow.css';
 
 const TaskAssignment = () => {
   const [tasks, setTasks] = useState([]);
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
   
   // Form state
   const [showForm, setShowForm] = useState(false);
@@ -175,12 +178,18 @@ const TaskAssignment = () => {
 
   const handleSearch = (e) => {
     setSearch(e.target.value);
+    setCurrentPage(1);
   };
 
   const filteredTasks = tasks.filter(task => 
     task.title.toLowerCase().includes(search.toLowerCase()) || 
     (task.assignee_name && task.assignee_name.toLowerCase().includes(search.toLowerCase()))
   );
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentTasks = filteredTasks.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredTasks.length / itemsPerPage);
 
   // Derive stats
   const stats = useMemo(() => {
@@ -465,7 +474,7 @@ const TaskAssignment = () => {
                     <p>Chưa có nhiệm vụ nào được ghi nhận trên hệ thống</p>
                 </div>
             ) : (
-                filteredTasks.map(task => (
+                currentTasks.map(task => (
                     <div className="wow-task-row" key={task.id}>
                         <div className="task-title-cell">
                             <div className="task-wow-title">{task.title}</div>
@@ -542,6 +551,10 @@ const TaskAssignment = () => {
                 ))
             )}
         </div>
+
+        {filteredTasks.length > 0 && (
+            <PaginationWow currentPage={currentPage} totalPages={totalPages} paginate={setCurrentPage} />
+        )}
 
         {/* Reporting Modal */}
         {reportingTask && (

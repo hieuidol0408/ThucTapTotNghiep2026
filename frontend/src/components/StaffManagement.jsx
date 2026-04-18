@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { fetchUsers, addUser, updateUser, deleteUser } from '../api/users';
+import PaginationWow from './PaginationWow';
 import '../StaffManagementWow.css';
 
 const StaffManagement = () => {
     const [users, setUsers] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -70,21 +73,11 @@ const StaffManagement = () => {
         }
     };
 
-    // Calculate Stats
-    const stats = useMemo(() => {
-        const now = new Date();
-        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        
-        return {
-            total: users.length,
-            admins: users.filter(u => u.role === 'admin').length,
-            staff: users.filter(u => u.role === 'staff').length,
-            recent: users.filter(u => new Date(u.created_at) > sevenDaysAgo).length
-        };
-    }, [users]);
+
 
     const handleSearch = (e) => {
         setSearch(e.target.value);
+        setCurrentPage(1);
         loadUsers(e.target.value);
     };
 
@@ -146,6 +139,11 @@ const StaffManagement = () => {
         setShowDetail(true);
     };
 
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentUsers = users.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(users.length / itemsPerPage);
+
     return (
         <div className="staff-wow-container">
             {/* Immersive Background */}
@@ -177,37 +175,7 @@ const StaffManagement = () => {
             {message && <div style={{background:'rgba(16,185,129,0.1)', color:'#059669', padding:'1.25rem 2rem', borderRadius:'20px', marginBottom:'2.5rem', border:'1px solid rgba(16,185,129,0.2)', fontWeight:'800', fontSize:'1.05rem', animation:'fadeSlideDown 0.4s ease-out'}}> {message} </div>}
             {error && <div style={{background:'rgba(239,68,68,0.1)', color:'#dc2626', padding:'1.25rem 2rem', borderRadius:'20px', marginBottom:'2.5rem', border:'1px solid rgba(239,68,68,0.2)', fontWeight:'800', fontSize:'1.05rem', animation:'fadeSlideDown 0.4s ease-out'}}> {error} </div>}
 
-            {/* High-End Stats Visualization */}
-            <div className="wow-stats-grid">
-                <div className="wow-stat-card">
-                    <div className="wow-stat-icon icon-indigo">
-                        <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                    </div>
-                    <div className="wow-stat-label">Tổng quy mô</div>
-                    <div className="wow-stat-value">{stats.total}</div>
-                </div>
-                <div className="wow-stat-card">
-                    <div className="wow-stat-icon icon-purple">
-                        <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                    </div>
-                    <div className="wow-stat-label">Quản trị viên</div>
-                    <div className="wow-stat-value">{stats.admins}</div>
-                </div>
-                <div className="wow-stat-card">
-                    <div className="wow-stat-icon icon-cyan">
-                        <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                    </div>
-                    <div className="wow-stat-label">Thành viên</div>
-                    <div className="wow-stat-value">{stats.staff}</div>
-                </div>
-                <div className="wow-stat-card">
-                    <div className="wow-stat-icon icon-rose">
-                        <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    </div>
-                    <div className="wow-stat-label">Mới trong tuần</div>
-                    <div className="wow-stat-value">{stats.recent}</div>
-                </div>
-            </div>
+
 
             {/* Immersive Glass Form */}
             {showForm && (
@@ -358,7 +326,7 @@ const StaffManagement = () => {
                             </button>
                         </div>
                     ) : (
-                        users.map(u => (
+                        currentUsers.map(u => (
                             <div className="wow-staff-row" key={u.user_id}>
                                 <div className="wow-staff-id" onClick={() => handleViewDetail(u)} style={{cursor:'pointer'}}>#ID-{u.id}</div>
                                 <div className="wow-staff-info" onClick={() => handleViewDetail(u)} style={{cursor:'pointer'}}>
@@ -392,6 +360,10 @@ const StaffManagement = () => {
                         ))
                     )}
                 </div>
+
+                {users.length > 0 && (
+                    <PaginationWow currentPage={currentPage} totalPages={totalPages} paginate={setCurrentPage} />
+                )}
 
             {/* View Detail Modal */}
             {showDetail && selectedUser && (

@@ -15,6 +15,7 @@ async function migrate() {
         await connection.execute(`
             CREATE TABLE IF NOT EXISTS reminders (
                 reminder_id INT AUTO_INCREMENT PRIMARY KEY,
+                task_id INT,
                 user_id CHAR(10) NOT NULL,
                 message TEXT NOT NULL,
                 reminder_time DATETIME NOT NULL,
