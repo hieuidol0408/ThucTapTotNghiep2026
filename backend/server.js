@@ -45,10 +45,14 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server is running at http://localhost:${PORT}`);
-    console.log(`Neu khong vao duoc localhost, hay thu: http://127.0.0.1:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`Server is running at http://localhost:${PORT}`);
+        console.log(`Neu khong vao duoc localhost, hay thu: http://127.0.0.1:${PORT}`);
+    });
+}
+
+module.exports = app;
 const cron = require('node-cron');
 
 // Cron job chạy mỗi phút 1 lần để kiểm tra nhắc nhở

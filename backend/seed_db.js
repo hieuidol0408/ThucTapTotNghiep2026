@@ -15,7 +15,10 @@ const seed = async () => {
             database: process.env.DB_NAME,
             port: process.env.DB_PORT,
             multipleStatements: true, // Cho phép dán nhiều câu lệnh SQL script
-            charset: 'utf8mb4'
+            charset: 'utf8mb4',
+            ssl: {
+                rejectUnauthorized: false
+            }
         });
 
         console.log('Connected to DB. Running DB Schema rewrite...');

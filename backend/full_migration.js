@@ -7,7 +7,10 @@ async function migrate() {
         user: process.env.DB_USER,
         password: process.env.DB_PASS,
         database: process.env.DB_NAME,
-        port: process.env.DB_PORT
+        port: process.env.DB_PORT,
+        ssl: {
+            rejectUnauthorized: false
+        }
     });
 
     try {
@@ -35,13 +38,13 @@ async function migrate() {
         await connection.execute(`
             CREATE TABLE IF NOT EXISTS reminders (
                 reminder_id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id CHAR(10) NOT NULL,
-                message TEXT NOT NULL,
+                user_id CHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+                message TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
                 reminder_time DATETIME NOT NULL,
                 is_active TINYINT(1) DEFAULT 1,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES NhanSu(MaNS) ON DELETE CASCADE
-            )
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
         console.log('Verified reminders table');
 
