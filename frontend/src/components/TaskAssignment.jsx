@@ -271,37 +271,6 @@ const TaskAssignment = () => {
         {message && <div style={{background:'rgba(16,185,129,0.1)', color:'#059669', padding:'1rem 2rem', borderRadius:'16px', marginBottom:'2rem', border:'1px solid rgba(16,185,129,0.2)', fontWeight:'700'}}>{message}</div>}
         {error && <div style={{background:'rgba(239,68,68,0.1)', color:'#dc2626', padding:'1rem 2rem', borderRadius:'16px', marginBottom:'2rem', border:'1px solid rgba(239,68,68,0.2)', fontWeight:'700'}}>{error}</div>}
 
-        {/* Floating Stat Cards Level 99 */}
-        <div className="wow-stats-grid">
-            <div className="wow-stat">
-                <div className="wow-stat-icon-wrapper icon-blue">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
-                </div>
-                <div className="wow-stat-label">Tổng khối lượng</div>
-                <div className="wow-stat-val">{stats.total}</div>
-            </div>
-            <div className="wow-stat">
-                <div className="wow-stat-icon-wrapper icon-purple">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                </div>
-                <div className="wow-stat-label">Cần thực hiện</div>
-                <div className="wow-stat-val">{stats.todo}</div>
-            </div>
-            <div className="wow-stat">
-                <div className="wow-stat-icon-wrapper icon-green">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                </div>
-                <div className="wow-stat-label">Đã hoàn tất</div>
-                <div className="wow-stat-val">{stats.done}</div>
-            </div>
-            <div className="wow-stat">
-                <div className="wow-stat-icon-wrapper icon-red">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                </div>
-                <div className="wow-stat-label">Bị trễ hạn</div>
-                <div className="wow-stat-val">{stats.late}</div>
-            </div>
-        </div>
 
         {/* Glass Form Modal */}
         {showForm && currentRole === 'admin' && (

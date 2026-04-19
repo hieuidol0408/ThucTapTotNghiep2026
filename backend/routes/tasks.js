@@ -4,6 +4,34 @@ const db = require('../config/db');
 const jwt = require('jsonwebtoken');
 
 const authMiddleware = (req, res, next) => {
+    const token = req.header('Authorization')?.split(' ')[1];
+    if (!token) return res.status(401).json({ message: 'Không tìm thấy token truy cập' });
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded.user;
+        next();
+    } catch (error) {
+        res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn' });
+    }
+};
+
+const isAdmin = (req, res, next) => {
+    if (req.user && req.user.role === 'admin') {
+        next();
+    } else {
+        res.status(403).json({ message: 'Truy cập bị từ chối' });
+    }
+};
+
+const escapeHtml = (text) => {
+    if (!text || typeof text !== 'string') return text;
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+};
 
 // GET all tasks (CongViec & PhanCongCongViec)
 router.get('/', authMiddleware, async (req, res) => {
