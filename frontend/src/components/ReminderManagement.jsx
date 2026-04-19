@@ -12,7 +12,7 @@ const ReminderManagement = () => {
     const [newReminder, setNewReminder] = useState({ task_id: '', message: '', reminder_time: '' });
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
+    const itemsPerPage = 3;
 
     const loadInitialData = React.useCallback(async () => {
         setLoading(true);

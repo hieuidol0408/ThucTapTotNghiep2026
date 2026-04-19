@@ -12,7 +12,7 @@ const SubjectAssignment = () => {
     // State for Tabs
     const [activeTab, setActiveTab] = useState('assignment'); // 'assignment' or 'management'
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
+    const itemsPerPage = 3;
 
     // Data State
     const [subjects, setSubjects] = useState([]);

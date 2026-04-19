@@ -6,7 +6,7 @@ import '../StaffManagementWow.css';
 const StaffManagement = () => {
     const [users, setUsers] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
+    const itemsPerPage = 3;
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
