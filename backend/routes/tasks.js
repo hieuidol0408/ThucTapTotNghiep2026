@@ -1,54 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const mysql = require('mysql2/promise');
+const db = require('../config/db');
 const jwt = require('jsonwebtoken');
 
 const authMiddleware = (req, res, next) => {
-    const token = req.header('Authorization')?.split(' ')[1];
-    if (!token) return res.status(401).json({ message: 'Không tìm thấy token truy cập' });
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded.user;
-        next();
-    } catch (error) {
-        res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn' });
-    }
-};
-
-const isAdmin = (req, res, next) => {
-    if (req.user && req.user.role === 'admin') {
-        next();
-    } else {
-        res.status(403).json({ message: 'Truy cập bị từ chối' });
-    }
-};
-
-const escapeHtml = (text) => {
-    if (!text || typeof text !== 'string') return text;
-    return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-};
-
-const getDb = async () => {
-    return await mysql.createConnection({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASS,
-        database: process.env.DB_NAME,
-        port: process.env.DB_PORT,
-        charset: 'utf8mb4'
-    });
-};
 
 // GET all tasks (CongViec & PhanCongCongViec)
 router.get('/', authMiddleware, async (req, res) => {
-    let db;
     try {
-        db = await getDb();
         let query = `
             SELECT 
                 c.MaCV as id, c.MaCV as task_id, c.TenCV as title, c.LoaiCV as category, c.MoTa as description,
@@ -79,16 +38,13 @@ router.get('/', authMiddleware, async (req, res) => {
     } catch (err) {
         console.error('Error fetching tasks:', err);
         res.status(500).json({ message: 'Lỗi máy chủ' });
-    } finally {
-        if (db) await db.end();
+        // No manual connection close needed
     }
 });
 
 // POST a new task (Admin only)
 router.post('/', [authMiddleware, isAdmin], async (req, res) => {
-    let db;
     try {
-        db = await getDb();
         let { title, category, description, assignee_id, start_date, end_date } = req.body;
 
         if (!title || !title.trim()) {
@@ -127,8 +83,7 @@ router.post('/', [authMiddleware, isAdmin], async (req, res) => {
         if (db) await db.rollback();
         console.error('Error creating task:', err);
         res.status(500).json({ message: 'Lỗi máy chủ: ' + (err.message || 'Không xác định') });
-    } finally {
-        if (db) await db.end();
+        // No manual connection close needed
     }
 });
 
@@ -139,9 +94,7 @@ router.put('/:id/status', authMiddleware, async (req, res) => {
 
 // POST a report for a task
 router.post('/:id/reports', authMiddleware, async (req, res) => {
-    let db;
     try {
-        db = await getDb();
         const { id } = req.params;
         const { report_note, progress_percent } = req.body;
 
@@ -180,16 +133,13 @@ router.post('/:id/reports', authMiddleware, async (req, res) => {
     } catch (err) {
         console.error('Error adding report:', err);
         res.status(500).json({ message: 'Lỗi máy chủ' });
-    } finally {
-        if (db) await db.end();
+        // No manual connection close needed
     }
 });
 
 // GET reports for a task
 router.get('/:id/reports', authMiddleware, async (req, res) => {
-    let db;
     try {
-        db = await getDb();
         const { id } = req.params;
         const [reports] = await db.execute(`
             SELECT b.MaBC as id, b.NoiDungBaoCao as report_note, b.NgayGui as created_at, b.PhanTramHoanThanh as progress_percent,
@@ -203,23 +153,19 @@ router.get('/:id/reports', authMiddleware, async (req, res) => {
     } catch (err) {
         console.error('Error fetching reports:', err);
         res.status(500).json({ message: 'Lỗi máy chủ' });
-    } finally {
-        if (db) await db.end();
+        // No manual connection close needed
     }
 });
 
 // DELETE a task (Admin only)
 router.delete('/:id', [authMiddleware, isAdmin], async (req, res) => {
-    let db;
     try {
-        db = await getDb();
         await db.execute(`DELETE FROM CongViec WHERE MaCV = ?`, [req.params.id]);
         res.json({ message: 'Xóa công việc thành công' });
     } catch (err) {
         console.error('Error deleting task:', err);
         res.status(500).json({ message: 'Lỗi máy chủ' });
-    } finally {
-        if (db) await db.end();
+        // No manual connection close needed
     }
 });
 

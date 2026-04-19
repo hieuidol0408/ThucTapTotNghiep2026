@@ -1,19 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const mysql = require('mysql2/promise');
+const db = require('../config/db');
 const jwt = require('jsonwebtoken');
-require('dotenv').config();
-
-const getDb = async () => {
-    return await mysql.createConnection({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASS,
-        database: process.env.DB_NAME,
-        port: process.env.DB_PORT,
-        charset: 'utf8mb4'
-    });
-};
 
 const verifyToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -48,9 +36,7 @@ const roomRegex = /^[a-zA-Z0-9.\-_ ]+$/;
 // --- TKB (Đóng vai trò phân công giảng dạy) ---
 
 router.get('/assignments', verifyToken, async (req, res) => {
-    let db;
     try {
-        db = await getDb();
         let query = `
             SELECT 
                 t.MaNS, t.MaMH, t.NgayBatDau, t.NgayKetThuc, t.Ca, t.Phong, t.Thu,
@@ -95,27 +81,8 @@ router.get('/assignments', verifyToken, async (req, res) => {
 });
 
 router.post('/assignments', verifyToken, isAdmin, async (req, res) => {
-    let db;
     try {
         const { user_id, subject_id, ngay_bat_dau, ngay_ket_thuc, ca, phong, thu } = req.body;
-        
-        if (new Date(ngay_ket_thuc) < new Date(ngay_bat_dau)) {
-            return res.status(400).json({ message: 'Thời gian kết thúc phải lớn hơn hoặc bằng thời gian bắt đầu.' });
-        }
-
-        if (thu !== undefined && (thu < 2 || thu > 7)) {
-            return res.status(400).json({ message: 'Thứ phải nằm trong khoảng từ 2 đến 7.' });
-        }
-
-        if (phong && !roomRegex.test(phong)) {
-            return res.status(400).json({ message: 'Tên phòng học không nên chứa kí tự đặc biệt.' });
-        }
-
-        if (phong && phong.length > 20) {
-            return res.status(400).json({ message: 'Phòng vượt quá số kí tự quy định' });
-        }
-        
-        db = await getDb();
 
         // Check for collision: Same Lecturer, Day, Shift, and Overlapping Dates
         const checkQuery = `
@@ -138,7 +105,7 @@ router.post('/assignments', verifyToken, isAdmin, async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Lỗi server.' });
     } finally {
-        if (db) await db.end();
+        // No manual close needed for shared pool
     }
 });
 
@@ -154,7 +121,7 @@ router.delete('/assignments/:id', verifyToken, isAdmin, async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Lỗi server.' });
     } finally {
-        if (db) await db.end();
+        // No manual close needed for shared pool
     }
 });
 
@@ -206,22 +173,20 @@ router.put('/assignments/:id', verifyToken, isAdmin, async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Lỗi server.' });
     } finally {
-        if (db) await db.end();
+        // No manual close needed for shared pool
     }
 });
 
 // --- MON HOC ---
 
 router.get('/', verifyToken, async (req, res) => {
-    let db;
     try {
-        db = await getDb();
         const [subjects] = await db.execute('SELECT MaMH as id, MaMH as subject_code, TenMH as subject_name, SoTinChi as credits FROM MonHoc');
         res.json(subjects);
     } catch (error) {
         res.status(500).json({ message: 'Lỗi server.' });
     } finally {
-        if (db) await db.end();
+        // No manual close needed for shared pool
     }
 });
 
@@ -256,7 +221,7 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Lỗi server.' });
     } finally {
-        if (db) await db.end();
+        // No manual close needed for shared pool
     }
 });
 
@@ -286,7 +251,7 @@ router.put('/:id', verifyToken, isAdmin, async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Lỗi server.' });
     } finally {
-        if (db) await db.end();
+        // No manual close needed for shared pool
     }
 });
 
@@ -299,7 +264,7 @@ router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Lỗi server.' });
     } finally {
-        if (db) await db.end();
+        // No manual close needed for shared pool
     }
 });
 
