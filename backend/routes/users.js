@@ -10,9 +10,13 @@ const bcrypt = require('bcryptjs');
 // Đảm bảo thư mục uploads tồn tại bằng đường dẫn tuyệt đối
 const UPLOAD_DIR = path.join(__dirname, '../uploads');
 console.log('[DEBUG] Upload Directory:', UPLOAD_DIR);
-if (!fs.existsSync(UPLOAD_DIR)) {
-    console.log('[DEBUG] Creating uploads directory...');
-    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+try {
+    if (!fs.existsSync(UPLOAD_DIR)) {
+        console.log('[DEBUG] Creating uploads directory...');
+        fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    }
+} catch (err) {
+    console.warn('[WARN] Could not create uploads directory in users route:', err.message);
 }
 
 // Cấu hình Multer

@@ -31,8 +31,12 @@ app.use('/api/reminders', require('./routes/reminders')); // Tuyến đường q
 // Serving Static Files
 const uploadsPath = path.join(__dirname, 'uploads');
 const fs = require('fs');
-if (!fs.existsSync(uploadsPath)) {
-    fs.mkdirSync(uploadsPath);
+try {
+    if (!fs.existsSync(uploadsPath)) {
+        fs.mkdirSync(uploadsPath);
+    }
+} catch (err) {
+    console.warn('[WARN] Could not create uploads directory (might be a read-only filesystem):', err.message);
 }
 app.use('/uploads', express.static(uploadsPath));
 
