@@ -52,11 +52,10 @@ router.get('/assignments', verifyToken, async (req, res) => {
         
         if (req.user.role && req.user.role.toLowerCase() === 'staff') {
             query += ` WHERE t.MaNS = ?`;
-            params.push(req.user.id); // Trùng với payload
+            params.push(req.user.id);
         }
         
         const [rows] = await db.execute(query, params);
-        // Transform id to a composite string since it has compound key
         const results = rows.map(r => ({
            id: `${r.MaNS}_${r.MaMH}`,
            user_id: r.MaNS,
@@ -74,9 +73,8 @@ router.get('/assignments', verifyToken, async (req, res) => {
         }));
         res.json(results);
     } catch (error) {
+        console.error('Assignment fetch error:', error);
         res.status(500).json({ message: 'Lỗi server.' });
-    } finally {
-        if (db) await db.end();
     }
 });
 
@@ -84,7 +82,6 @@ router.post('/assignments', verifyToken, isAdmin, async (req, res) => {
     try {
         const { user_id, subject_id, ngay_bat_dau, ngay_ket_thuc, ca, phong, thu } = req.body;
 
-        // Check for collision: Same Lecturer, Day, Shift, and Overlapping Dates
         const checkQuery = `
             SELECT 1 FROM TKB 
             WHERE MaNS = ? AND Thu = ? AND Ca = ?
@@ -103,30 +100,25 @@ router.post('/assignments', verifyToken, isAdmin, async (req, res) => {
         );
         res.status(201).json({ message: 'Phân công môn học thành công!' });
     } catch (error) {
+        console.error('Assignment error:', error);
         res.status(500).json({ message: 'Lỗi server.' });
-    } finally {
-        // No manual close needed for shared pool
     }
 });
 
 router.delete('/assignments/:id', verifyToken, isAdmin, async (req, res) => {
-    let db;
     try {
         const idParts = req.params.id.split('_');
         if (idParts.length !== 2) return res.status(400).json({ message: 'ID không hợp lệ.'});
         
-        db = await getDb();
         await db.execute('DELETE FROM TKB WHERE MaNS = ? AND MaMH = ?', [idParts[0], idParts[1]]);
         res.json({ message: 'Xóa phân công thành công.' });
     } catch (error) {
+        console.error('Delete assignment error:', error);
         res.status(500).json({ message: 'Lỗi server.' });
-    } finally {
-        // No manual close needed for shared pool
     }
 });
 
 router.put('/assignments/:id', verifyToken, isAdmin, async (req, res) => {
-    let db;
     try {
         const idParts = req.params.id.split('_');
         if (idParts.length !== 2) return res.status(400).json({ message: 'ID không hợp lệ.'});
@@ -144,14 +136,7 @@ router.put('/assignments/:id', verifyToken, isAdmin, async (req, res) => {
         if (phong && !roomRegex.test(phong)) {
             return res.status(400).json({ message: 'Tên phòng học không nên chứa kí tự đặc biệt.' });
         }
-
-        if (phong && phong.length > 20) {
-            return res.status(400).json({ message: 'Phòng vượt quá số kí tự quy định' });
-        }
         
-        db = await getDb();
-
-        // Check for collision (excluding current record being updated)
         const checkQuery = `
             SELECT 1 FROM TKB 
             WHERE MaNS = ? AND Thu = ? AND Ca = ?
@@ -171,9 +156,8 @@ router.put('/assignments/:id', verifyToken, isAdmin, async (req, res) => {
         );
         res.json({ message: 'Cập nhật phân công thành công!' });
     } catch (error) {
+        console.error('Update assignment error:', error);
         res.status(500).json({ message: 'Lỗi server.' });
-    } finally {
-        // No manual close needed for shared pool
     }
 });
 
@@ -184,14 +168,12 @@ router.get('/', verifyToken, async (req, res) => {
         const [subjects] = await db.execute('SELECT MaMH as id, MaMH as subject_code, TenMH as subject_name, SoTinChi as credits FROM MonHoc');
         res.json(subjects);
     } catch (error) {
+        console.error('Fetch subjects error:', error);
         res.status(500).json({ message: 'Lỗi server.' });
-    } finally {
-        // No manual close needed for shared pool
     }
 });
 
 router.post('/', verifyToken, isAdmin, async (req, res) => {
-    let db;
     try {
         const { subject_code, subject_name, credits } = req.body;
         
@@ -205,9 +187,6 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
             return res.status(400).json({ message: 'Tên môn học không nên chứa kí tự đặc biệt.' });
         }
 
-        db = await getDb();
-
-        // Check for duplicate subject code
         const [existing] = await db.execute('SELECT 1 FROM MonHoc WHERE MaMH = ?', [subject_code]);
         if (existing.length > 0) {
             return res.status(400).json({ message: 'Mã môn học đã tồn tại' });
@@ -219,52 +198,34 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
         );
         res.status(201).json({ message: 'Thêm môn học mới thành công!' });
     } catch (error) {
+        console.error('Create subject error:', error);
         res.status(500).json({ message: 'Lỗi server.' });
-    } finally {
-        // No manual close needed for shared pool
     }
 });
 
 router.put('/:id', verifyToken, isAdmin, async (req, res) => {
-    let db;
     try {
         const { id } = req.params;
         const { subject_name, credits } = req.body;
         
-        // id here is the MaMH being updated
-        const codeRegex = /^[a-zA-Z0-9.\-_]+$/;
-        if (id && !codeRegex.test(id)) {
-            return res.status(400).json({ message: 'Mã môn học không thể chứa kí tự đặc biệt.' });
-        }
-
-        const nameRegex = /^[\p{L}\p{N}\s.\-_()]+$/u;
-        if (subject_name && !nameRegex.test(subject_name)) {
-            return res.status(400).json({ message: 'Tên môn học không nên chứa kí tự đặc biệt.' });
-        }
-
-        db = await getDb();
         await db.execute(
             'UPDATE MonHoc SET TenMH = ?, SoTinChi = ? WHERE MaMH = ?',
             [sanitizeXSS(subject_name), credits, id]
         );
         res.json({ message: 'Cập nhật môn học thành công!' });
     } catch (error) {
+        console.error('Update subject error:', error);
         res.status(500).json({ message: 'Lỗi server.' });
-    } finally {
-        // No manual close needed for shared pool
     }
 });
 
 router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
-    let db;
     try {
-        db = await getDb();
         await db.execute('DELETE FROM MonHoc WHERE MaMH = ?', [req.params.id]);
         res.json({ message: 'Xóa môn học thành công.' });
     } catch (error) {
+        console.error('Delete subject error:', error);
         res.status(500).json({ message: 'Lỗi server.' });
-    } finally {
-        // No manual close needed for shared pool
     }
 });
 
